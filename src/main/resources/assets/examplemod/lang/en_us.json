@@ -2,6 +2,7 @@
   "itemGroup.examplemod": "Example Mod Tab",
   "block.examplemod.example_block": "Example Block",
   "item.examplemod.example_item": "Example Item",
+  "item.examplemod.shuffle_filter": "Shuffle Filter",
 
   "examplemod.configuration.title": "Example Mod Configs",
   "examplemod.configuration.section.examplemod.common.toml": "Example Mod Configs",
