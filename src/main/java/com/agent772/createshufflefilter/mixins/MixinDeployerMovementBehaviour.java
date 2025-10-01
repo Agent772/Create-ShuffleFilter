@@ -1,8 +1,8 @@
-package com.agent772.createshufflefilter;
+package com.agent772.createshufflefilter.mixins;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
+import net.minecraft.util.RandomSource;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,12 +15,10 @@ import com.simibubi.create.content.kinetics.deployer.DeployerMovementBehaviour;
 import com.simibubi.create.content.logistics.filter.FilterItemStack;
 import com.simibubi.create.foundation.item.ItemHelper;
 import com.simibubi.create.content.contraptions.behaviour.MovementContext;
+import com.agent772.createshufflefilter.CreateShuffleFilter;
 
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.tags.TagKey;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.items.IItemHandler;
 
@@ -44,11 +42,8 @@ public class MixinDeployerMovementBehaviour {
         // keep existing schematic behavior
         if (com.simibubi.create.AllItems.SCHEMATIC.isIn(filter.item()))
             return;
-        // --- detection: use an item tag to detect the special shuffle filter ---
-        // We recommend using a tag so resource packs and other mods can opt-in.
-        TagKey<net.minecraft.world.item.Item> SHUFFLE_FILTER_TAG = TagKey.create(Registries.ITEM, new ResourceLocation("createshufflefilter", "shuffle_filter"));
-
-        boolean isShuffleFilter = filter != null && !filter.item().isEmpty() && filter.item().is(SHUFFLE_FILTER_TAG);
+        // --- detection: use the shared item tag to detect the special shuffle filter ---
+        boolean isShuffleFilter = filter != null && !filter.item().isEmpty() && filter.item().is(CreateShuffleFilter.SHUFFLE_FILTER_TAG);
         if (!isShuffleFilter) return;
         // --- end detection ---
 
@@ -81,7 +76,7 @@ public class MixinDeployerMovementBehaviour {
         if (candidates.size() == 1) {
             chosen = candidates.get(0);
         } else {
-            Random r = world.getRandom();
+            RandomSource r = world.getRandom();
             chosen = candidates.get(r.nextInt(candidates.size()));
         }
 

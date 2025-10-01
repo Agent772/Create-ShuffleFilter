@@ -12,11 +12,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\clientRunProgramArgs.txt"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\clientRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\clientRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -34,11 +34,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\dataRunProgramArgs.txt"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\dataRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\dataRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\dataRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -56,11 +56,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunProgramArgs.txt"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -78,11 +78,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\serverRunProgramArgs.txt"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\serverRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\build\\moddev\\serverRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%C:\\Users\\z003dpvm\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\serverRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},

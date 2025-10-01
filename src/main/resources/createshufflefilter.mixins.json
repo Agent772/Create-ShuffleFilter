@@ -1,10 +1,11 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "com.agent772.createshufflefilter",
+  "package": "com.agent772.createshufflefilter.mixins",
   "refmap": "mixins.createshufflefilter.refmap.json",
   "mixins": [
-    "MixinDeployerMovementBehaviour"
+    "MixinDeployerMovementBehaviour",
+    "MixinFilterItem"
   ],
   "client": [],
   "server": []
