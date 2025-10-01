@@ -16,7 +16,7 @@
     }
   },
   "result": {
-    "id": "examplemod:shuffle_filter",
+    "id": "createshufflefilter:shuffle_filter",
     "count": 1
   }
 }

@@ -1,4 +1,4 @@
-package com.example.examplemod;
+package com.agent772.createshufflefilter;
 
 import com.simibubi.create.content.logistics.filter.FilterItem;
 
@@ -12,6 +12,6 @@ import net.minecraft.world.item.Item;
 public class ShuffleFilterItem extends FilterItem {
     
     public ShuffleFilterItem(Item.Properties properties) {
-        super(properties);
+        super(FilterType.REGULAR, properties);
     }
 }

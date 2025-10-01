@@ -19,10 +19,8 @@ group = mod_group_id
 
 repositories {
     // Add here additional repositories if required by some of the dependencies below.
-    maven {
-        name = "Modrinth"
-        url = "https://api.modrinth.com/maven"
-    }
+    maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
+    maven { url = "https://maven.ithundxr.dev/snapshots" } // Registrate
 }
 
 base {
@@ -116,8 +114,12 @@ configurations {
 }
 
 dependencies {
-    // Create mod dependency
-    implementation "maven.modrinth:create:${create_version}"
+    // Create mod dependencies
+    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
+    implementation("net.createmod.ponder:Ponder-NeoForge-${minecraft_version}:${ponder_version}")
+    compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}")
+    runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}")
+    implementation("com.tterrag.registrate:Registrate:${registrate_version}")
 
     // Example optional mod dependency with JEI
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
