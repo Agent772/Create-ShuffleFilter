@@ -15,7 +15,7 @@ loaderVersion="${loader_version_range}" #mandatory
 license="${mod_license}"
 
 # A URL to refer people to when problems occur with this mod
-#issueTrackerURL="https://change.me.to.your.issue.tracker.example.invalid/" #optional
+issueTrackerURL="https://github.com/Agent772/Create-ShuffleFilter/issues" #optional
 
 # A list of mods - how many allowed here is determined by the individual mod loader
 [[mods]] #mandatory
@@ -33,13 +33,13 @@ displayName="${mod_name}" #mandatory
 #updateJSONURL="https://change.me.example.invalid/updates.json" #optional
 
 # A URL for the "homepage" for this mod, displayed in the mod UI
-#displayURL="https://change.me.to.your.mods.homepage.example.invalid/" #optional
+displayURL="https://github.com/Agent772/Create-ShuffleFilter"
 
 # A file name (in the root of the mod JAR) containing a logo for display
-#logoFile="examplemod.png" #optional
+logoFile="shufflefilters_logo.png" #optional
 
 # A text field displayed in the mod UI
-#credits="" #optional
+credits="Creators of Create, NeoForge, Copilot, and all other awesome tools that made this possible." #optional
 
 # A text field displayed in the mod UI
 authors="${mod_authors}" #optional
@@ -48,8 +48,8 @@ authors="${mod_authors}" #optional
 description='''${mod_description}'''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
-#[[mixins]]
-#config="${mod_id}.mixins.json"
+[[mixins]]
+config="${mod_id}.mixins.json"
 
 # The [[accessTransformers]] block allows you to declare where your AT file is.
 # If this block is omitted, a fallback attempt will be made to load an AT from META-INF/accesstransformer.cfg
@@ -84,6 +84,15 @@ description='''${mod_description}'''
     # This version range declares a minimum of the current minecraft version up to but not including the next major version
     versionRange="${minecraft_version_range}"
     ordering="NONE"
+    side="BOTH"
+
+# Declare a runtime/load dependency on Create so this mod is loaded after Create
+[[dependencies.${mod_id}]]
+    modId="create"
+    type="required"
+    # use the create_version property from gradle.properties; requires Create of at least this version
+    versionRange="[${create_version},)"
+    ordering="AFTER"
     side="BOTH"
 
 # Features are specific properties of the game environment, that you may want to declare you require. This example declares
