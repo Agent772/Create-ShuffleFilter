@@ -1,4 +1,21 @@
 {
   "itemGroup.createshufflefilter": "Create Shuffle Filter",
-  "item.createshufflefilter.shuffle_filter": "Shuffle Filter"
+  "item.createshufflefilter.shuffle_filter": "Shuffle Filter",
+  
+  "_comment": "Tooltip entries for shuffle filter - for future translation support",
+  "item.createshufflefilter.shuffle_filter.tooltip.summary": "Randomizes item selection from filtered matches",
+  "item.createshufflefilter.shuffle_filter.tooltip.behaviour": "Behaviour",
+  "item.createshufflefilter.shuffle_filter.tooltip.behaviour.description": "Selects items randomly from those that pass the filter.",
+  "item.createshufflefilter.shuffle_filter.tooltip.equal_mode": "Equal Mode",
+  "item.createshufflefilter.shuffle_filter.tooltip.equal_mode.1": "All matching items have equal selection chance",
+  "item.createshufflefilter.shuffle_filter.tooltip.equal_mode.2": "Ignores stack quantities for selection",
+  "item.createshufflefilter.shuffle_filter.tooltip.weighted_mode": "Weighted Mode", 
+  "item.createshufflefilter.shuffle_filter.tooltip.weighted_mode.1": "Items with more stacks are more likely to be selected",
+  "item.createshufflefilter.shuffle_filter.tooltip.weighted_mode.2": "Selection probability based on stack count",
+  "item.createshufflefilter.shuffle_filter.tooltip.controls": "Use the filter GUI toggle to switch between modes",
+  
+  "_comment_summary": "Summary entries for shuffle filter mode display",
+  "item.createshufflefilter.shuffle_filter.summary.mode": "Mode:",
+  "item.createshufflefilter.shuffle_filter.summary.mode.equal": "Equal",
+  "item.createshufflefilter.shuffle_filter.summary.mode.weighted": "Weighted"
 }

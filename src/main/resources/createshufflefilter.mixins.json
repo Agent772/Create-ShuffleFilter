@@ -6,7 +6,9 @@
   "mixins": [
     "MixinDeployerMovementBehaviour",
     "MixinFilterItem",
-    "MixinFilterItemStack"
+    "MixinFilterItemStack",
+    "MixinFilterItemTooltip",
+    "MixinFilterItemSummary"
   ],
   "client": [
     "MixinFilterScreen"
