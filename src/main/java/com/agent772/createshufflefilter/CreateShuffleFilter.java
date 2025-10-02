@@ -33,6 +33,7 @@ public class CreateShuffleFilter {
 
     public static final ItemEntry<FilterItem> SHUFFLE_FILTER = REGISTRATE.item("shuffle_filter", FilterItem::regular)
         .lang("Shuffle Filter")
+        .tag(SHUFFLE_FILTER_TAG)
         .register();
 
     public CreateShuffleFilter(IEventBus modEventBus, ModContainer modContainer) {

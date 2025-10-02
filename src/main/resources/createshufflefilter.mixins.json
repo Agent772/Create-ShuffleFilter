@@ -5,7 +5,8 @@
   "refmap": "mixins.createshufflefilter.refmap.json",
   "mixins": [
     "MixinDeployerMovementBehaviour",
-    "MixinFilterItem"
+    "MixinFilterItem",
+    "MixinFilterItemStack"
   ],
   "client": [],
   "server": []

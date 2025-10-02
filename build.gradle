@@ -197,3 +197,24 @@ idea {
         downloadJavadoc = true
     }
 }
+
+// Task: copy the produced jar(s) to the user's CurseForge instance mods folder after a build
+// Adjust the destination path below if your CurseForge instance path changes.
+tasks.register('copyJarToTester', Copy) {
+    // Ensure the jar is built first (use task name string to avoid capturing task objects)
+    dependsOn 'jar'
+
+    // Copy only jars that start with the mod id (safer than copying everything)
+    from("$buildDir/libs") {
+        include "${mod_id}*.jar"
+    }
+
+    // Destination - use forward slashes to avoid escaping backslashes
+    into file('C:/Users/agent/curseforge/minecraft/Instances/TESTER (1)/mods')
+}
+
+// Run the copy task after the main 'build' task completes
+tasks.named('build') {
+    // Use task name string for finalizedBy to stay configuration-cache friendly
+    finalizedBy 'copyJarToTester'
+}
