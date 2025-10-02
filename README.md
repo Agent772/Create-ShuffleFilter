@@ -20,21 +20,22 @@
 Short pitch
 -----------
 
-Add unpredictable variety to your builds with Create contraptions. The Create Shuffle Filter is a lightweight mod that provides a new "Shuffle Filter" item which, when used in Create deployers on contrabtions enables a randomnes when placing blocks. (Like the shuffle mod for players). It brings 2 modes, weighted based on stack quantity and normal "random", where each item gets the same chance.
+Add unpredictable variety to your automated builds. The Create Shuffle Filter is a lightweight mod that provides a new "Shuffle Filter" item which, when used in Create deployers on contrabtions, enables a randomnes when placing blocks. (Like the shuffle mod for players). It brings 2 modes, weighted (based on stack quantity) and normal "random" (where each item gets the same probability).
 The Filter works like a normal List filter everywhere else! The weighted mode = ignore nbt data, and random mode = compare nbt data in these cases.
 
 Why you'll love it
 -------------------
 - Randomness where you want it: choose equally between matching types or use weighted selection based on stack counts.
+- No need to bring in those block mixups per hand, your contrabtion can build it now!
 - Small and focused: a single item and a small behaviour mixin — no heavy UI or complex config required.
-- Fully compatible with Create mod mechanics and NeoForged/Forge environments.
+- Fully compatible with Create mod and addons.
 
 Quick Features
 --------------
 - New item: Shuffle Filter (registers as `createshufflefilter:shuffle_filter`)
-- Works with Create deployers and other filter-aware contraptions
+- Enables shuffle mode on Create deployers on contraptions, works as normal list filter in all other cases.
 - Two selection modes (equal or weighted) inferred from filter component data
-- Preserves NBT-aware matching when required
+
 
 Installation
 ------------
