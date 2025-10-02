@@ -8,6 +8,8 @@
     "MixinFilterItem",
     "MixinFilterItemStack"
   ],
-  "client": [],
+  "client": [
+    "MixinFilterScreen"
+  ],
   "server": []
 }

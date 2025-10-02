@@ -18,10 +18,7 @@ public class MixinFilterItemStack {
     private static void onOf(ItemStack filter, CallbackInfoReturnable<FilterItemStack> cir) {
         // Check if this is our shuffle filter
         if (!filter.isComponentsPatchEmpty() && 
-            (filter.is(CreateShuffleFilter.SHUFFLE_FILTER_TAG) || 
-             filter.getItem() == CreateShuffleFilter.SHUFFLE_FILTER.get())) {
-            
-            CreateShuffleFilter.LOGGER.info("MixinFilterItemStack: Recognizing shuffle filter, creating ListFilterItemStack");
+            filter.getItem() == CreateShuffleFilter.SHUFFLE_FILTER.get()) {
             
             // Remove extra components like Create does for its filters
             filter.remove(net.minecraft.core.component.DataComponents.ENCHANTMENTS);
