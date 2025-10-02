@@ -3,8 +3,6 @@
 	<img src="src/main/resources/shufflefilters_logo.png" alt="Shuffle Filter Logo" width="240" />
 </p>
 
-# Create Shuffle Filter
-
 <!-- Version / platform badges -->
 
 <p align="center">
@@ -15,6 +13,8 @@
 	<img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 	<img src="https://img.shields.io/badge/Java-17%2B-orange?logo=java" alt="Java" />
 </p>
+
+# Create Shuffle Filter
 
 
 Short pitch
