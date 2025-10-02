@@ -1,16 +1,20 @@
 
+<p align="center">
+	<img src="src/main/resources/shufflefilters_logo.png" alt="Shuffle Filter Logo" width="240" />
+</p>
+
 # Create Shuffle Filter
 
 <!-- Version / platform badges -->
 
-![Minecraft](https://img.shields.io/badge/Minecraft-1.21.1-brightgreen?logo=minecraft)
-![Create](https://img.shields.io/badge/Create-6.0.6--98-blue)
-![NeoForged](https://img.shields.io/badge/NeoForged-21.1.209-663399)
-![Mod version](https://img.shields.io/badge/mod%20version-1.0.0-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Java](https://img.shields.io/badge/Java-17%2B-orange?logo=java)
-
-![Shuffle Filter Logo](src/main/resources/shufflefilters_logo.png)
+<p align="center">
+	<img src="https://img.shields.io/badge/Minecraft-1.21.1-brightgreen?logo=minecraft" alt="Minecraft" />
+	<img src="https://img.shields.io/badge/Create-6.0.6--98-blue" alt="Create" />
+	<img src="https://img.shields.io/badge/NeoForged-21.1.209-663399" alt="NeoForged" />
+	<img src="https://img.shields.io/badge/mod%20version-1.0.0-blue" alt="Mod version" />
+	<img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
+	<img src="https://img.shields.io/badge/Java-17%2B-orange?logo=java" alt="Java" />
+</p>
 
 
 Short pitch
