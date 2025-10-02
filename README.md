@@ -10,7 +10,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Java](https://img.shields.io/badge/Java-17%2B-orange?logo=java)
 
-![Shuffle Filter Logo](bin/main/shufflefilters_logo.png)
+![Shuffle Filter Logo](src/main/resources/shufflefilters_logo.png)
 
 
 Short pitch
