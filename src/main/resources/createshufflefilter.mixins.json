@@ -4,11 +4,9 @@
   "package": "com.agent772.createshufflefilter.mixins",
   "refmap": "mixins.createshufflefilter.refmap.json",
   "mixins": [
-    "MixinDeployerMovementBehaviour",
-    "MixinFilterItem",
-    "MixinFilterItemStack",
     "MixinFilterItemTooltip",
-    "MixinFilterItemSummary"
+    "MixinFilterItemStack",
+    "MixinDeployerMovementBehaviour"
   ],
   "client": [
     "MixinFilterScreen"

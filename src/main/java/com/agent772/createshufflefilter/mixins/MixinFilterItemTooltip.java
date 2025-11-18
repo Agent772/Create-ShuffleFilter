@@ -26,6 +26,38 @@ public class MixinFilterItemTooltip {
         if (stack.is(CreateShuffleFilter.SHUFFLE_FILTER.get())) {
             tooltip.add(Component.literal("Randomizes item selection from filtered matches for deployers on contraptions").withStyle(ChatFormatting.GRAY));
             
+            // Determine the current mode
+            boolean useWeightedMode = false;  // Default to equal mode
+            
+            try {
+                var components = stack.getComponents();
+                String componentsStr = components.toString();
+                
+                if (componentsStr.contains("create:filter_items_respect_nbt=>")) {
+                    int startIndex = componentsStr.indexOf("create:filter_items_respect_nbt=>") + "create:filter_items_respect_nbt=>".length();
+                    String remaining = componentsStr.substring(startIndex);
+                    
+                    int endIndex = remaining.indexOf(',');
+                    if (endIndex == -1) endIndex = remaining.indexOf('}');
+                    if (endIndex == -1) endIndex = remaining.length();
+                    
+                    String valueStr = remaining.substring(0, endIndex).trim();
+                    
+                    if (valueStr.equals("false")) {
+                        useWeightedMode = true; // respectNBT=false means weighted mode
+                    }
+                }
+            } catch (Exception e) {
+                // Silently fall back to equal mode
+            }
+            
+            // Add current mode display
+            Component modeComponent = Component.literal("Current Mode: ").withStyle(ChatFormatting.GOLD)
+                .append(useWeightedMode 
+                    ? Component.literal("Weighted").withStyle(ChatFormatting.GREEN)
+                    : Component.literal("Equal").withStyle(ChatFormatting.BLUE));
+            tooltip.add(modeComponent);
+            
             if (AllKeys.shiftDown()) {
                 // Detailed tooltip when holding shift
                 tooltip.add(Component.literal("Behaviour when in deployer on contraption").withStyle(ChatFormatting.GOLD));

@@ -22,7 +22,9 @@ public class CreateShuffleFilter {
             .create(MODID)
             .defaultCreativeTab(AllCreativeModeTabs.BASE_CREATIVE_TAB.getKey());
 
-    public static final ItemEntry<FilterItem> SHUFFLE_FILTER = REGISTRATE.item("shuffle_filter", FilterItem::regular)
+    // Create 6.0.8 uses FilterItem::regular which automatically creates a ListFilterItem instance
+    // This handles all the filter behavior we need, no custom FilterItem mixin required
+    public static final ItemEntry<? extends FilterItem> SHUFFLE_FILTER = REGISTRATE.item("shuffle_filter", FilterItem::regular)
         .lang("Shuffle Filter")
         .register();
 
