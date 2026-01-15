@@ -13,15 +13,15 @@ import com.simibubi.create.content.logistics.filter.FilterItem;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.level.Level;
 
-@Mixin(FilterItem.class)
+@Mixin(value = FilterItem.class, remap = false)
 public class MixinFilterItemTooltip {
 
     @Inject(method = "appendHoverText", at = @At("HEAD"))
-    private void addShuffleFilterTooltip(ItemStack stack, Item.TooltipContext context, List<Component> tooltip, TooltipFlag flag, CallbackInfo ci) {
+    private void addShuffleFilterTooltip(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag, CallbackInfo ci) {
         // Check if this is our shuffle filter
         if (stack.is(CreateShuffleFilter.SHUFFLE_FILTER.get())) {
             tooltip.add(Component.literal("Randomizes item selection from filtered matches for deployers on contraptions").withStyle(ChatFormatting.GRAY));
@@ -30,21 +30,11 @@ public class MixinFilterItemTooltip {
             boolean useWeightedMode = false;  // Default to equal mode
             
             try {
-                var components = stack.getComponents();
-                String componentsStr = components.toString();
-                
-                if (componentsStr.contains("create:filter_items_respect_nbt=>")) {
-                    int startIndex = componentsStr.indexOf("create:filter_items_respect_nbt=>") + "create:filter_items_respect_nbt=>".length();
-                    String remaining = componentsStr.substring(startIndex);
-                    
-                    int endIndex = remaining.indexOf(',');
-                    if (endIndex == -1) endIndex = remaining.indexOf('}');
-                    if (endIndex == -1) endIndex = remaining.length();
-                    
-                    String valueStr = remaining.substring(0, endIndex).trim();
-                    
-                    if (valueStr.equals("false")) {
-                        useWeightedMode = true; // respectNBT=false means weighted mode
+                if (stack.hasTag() && stack.getTag() != null) {
+                    // In 1.20.1, Create stores filter settings in NBT
+                    if (stack.getTag().contains("RespectNBT")) {
+                        boolean respectNBT = stack.getTag().getBoolean("RespectNBT");
+                        useWeightedMode = !respectNBT; // respectNBT=false means weighted mode
                     }
                 }
             } catch (Exception e) {
@@ -61,24 +51,24 @@ public class MixinFilterItemTooltip {
             if (AllKeys.shiftDown()) {
                 // Detailed tooltip when holding shift
                 tooltip.add(Component.literal("Behaviour when in deployer on contraption").withStyle(ChatFormatting.GOLD));
-                tooltip.add(Component.literal("• Selects items randomly from those that pass the filter.").withStyle(ChatFormatting.GRAY));
-                tooltip.add(Component.literal("• Randomness is controlled via 2 mods").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Selects items randomly from those that pass the filter.").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Randomness is controlled via 2 mods").withStyle(ChatFormatting.GRAY));
                 tooltip.add(Component.empty());
                 tooltip.add(Component.literal("Behaviour in all other cases").withStyle(ChatFormatting.GOLD));
-                tooltip.add(Component.literal("• Behaves like a normal List Filter").withStyle(ChatFormatting.GRAY));
-                tooltip.add(Component.literal("• Equal Mode  = use NBT Data").withStyle(ChatFormatting.GRAY));
-                tooltip.add(Component.literal("• Weighted Mode  = ignore NBT Data").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Behaves like a normal List Filter").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Equal Mode  = use NBT Data").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Weighted Mode  = ignore NBT Data").withStyle(ChatFormatting.GRAY));
                 tooltip.add(Component.empty());
                 
                 // Add mode explanations
                 tooltip.add(Component.literal("Equal Mode").withStyle(ChatFormatting.BLUE));
-                tooltip.add(Component.literal("• All matching items have equal selection chance").withStyle(ChatFormatting.GRAY));
-                tooltip.add(Component.literal("• Ignores stack quantities for selection").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- All matching items have equal selection chance").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Ignores stack quantities for selection").withStyle(ChatFormatting.GRAY));
                 tooltip.add(Component.empty());
                 
                 tooltip.add(Component.literal("Weighted Mode").withStyle(ChatFormatting.GREEN));
-                tooltip.add(Component.literal("• Items with more stacks are more likely to be selected").withStyle(ChatFormatting.GRAY));
-                tooltip.add(Component.literal("• Selection probability based on stack count").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Items with more stacks are more likely to be selected").withStyle(ChatFormatting.GRAY));
+                tooltip.add(Component.literal("- Selection probability based on stack count").withStyle(ChatFormatting.GRAY));
                 tooltip.add(Component.empty());
                 
                 tooltip.add(Component.literal("Use the filter GUI toggle to switch between modes").withStyle(ChatFormatting.DARK_GRAY));

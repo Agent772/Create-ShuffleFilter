@@ -24,21 +24,21 @@ config="${mod_id}.mixins.json"
 
 [[dependencies.${mod_id}]] #optional
     modId="forge" 
-    type="required" 
+    mandatory=true
     versionRange="${loader_version_range}" 
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="minecraft"
-    type="required"
+    mandatory=true
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="create"
-    type="required"
+    mandatory=true
     versionRange="${create_version_range}"
     ordering="AFTER"
     side="BOTH"

@@ -19,7 +19,9 @@
         "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
-      "env": {},
+      "env": {
+        "MOD_CLASSES": "createshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
+      },
       "console": "internalConsole",
       "shortenCommandLine": "none"
     },
@@ -41,29 +43,9 @@
         "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
-      "env": {},
-      "console": "internalConsole",
-      "shortenCommandLine": "none"
-    },
-    {
-      "type": "java",
-      "request": "launch",
-      "name": "GameTestServer",
-      "presentation": {
-        "group": "Mod Development - Create-ShuffleFilter",
-        "order": 2
+      "env": {
+        "MOD_CLASSES": "createshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       },
-      "projectName": "Create-ShuffleFilter",
-      "mainClass": "net.neoforged.devlaunch.Main",
-      "args": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunProgramArgs.txt"
-      ],
-      "vmArgs": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
-      ],
-      "cwd": "${workspaceFolder}\\run",
-      "env": {},
       "console": "internalConsole",
       "shortenCommandLine": "none"
     },
@@ -73,7 +55,7 @@
       "name": "Server",
       "presentation": {
         "group": "Mod Development - Create-ShuffleFilter",
-        "order": 3
+        "order": 2
       },
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
@@ -84,8 +66,10 @@
         "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\serverRunVmArgs.txt",
         "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
       ],
-      "cwd": "${workspaceFolder}\\run",
-      "env": {},
+      "cwd": "${workspaceFolder}\\run\\server",
+      "env": {
+        "MOD_CLASSES": "createshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
+      },
       "console": "internalConsole",
       "shortenCommandLine": "none"
     }

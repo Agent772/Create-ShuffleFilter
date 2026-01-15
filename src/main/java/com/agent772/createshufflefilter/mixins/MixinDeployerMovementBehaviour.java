@@ -20,9 +20,9 @@ import com.agent772.createshufflefilter.CreateShuffleFilter;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
-import net.neoforged.neoforge.items.IItemHandler;
+import net.minecraftforge.items.IItemHandler;
 
-@Mixin(DeployerMovementBehaviour.class)
+@Mixin(value = DeployerMovementBehaviour.class, remap = false)
 public class MixinDeployerMovementBehaviour {
 
     @Shadow
@@ -32,7 +32,7 @@ public class MixinDeployerMovementBehaviour {
     private void onTryGrabbingItem(MovementContext context, CallbackInfo ci) {
         // Only server side
         Level world = context.world;
-        if (world.isClientSide) return;
+        if (world == null || world.isClientSide) return;
 
         FilterItemStack filter = context.getFilterFromBE();
         
@@ -42,10 +42,16 @@ public class MixinDeployerMovementBehaviour {
         
         if (!isShuffleFilter) return; // Let original method handle regular filters
 
+        // Safety checks
+        if (context.contraption == null) return;
+        
         DeployerFakePlayer player = getPlayer(context);
         if (player == null || !player.getMainHandItem().isEmpty()) return;
 
-        IItemHandler inv = context.contraption.getStorage().getAllItems();
+        var storage = context.contraption.getStorage();
+        if (storage == null) return;
+        
+        IItemHandler inv = storage.getAllItems();
         if (inv == null) return;
 
         // Collect unique candidates by full item+components
@@ -53,12 +59,12 @@ public class MixinDeployerMovementBehaviour {
         
         for (int slot = 0; slot < inv.getSlots(); slot++) {
             ItemStack s = inv.getStackInSlot(slot);
-            // At this point filter is guaranteed to be non-null due to isShuffleFilter check above
-            if (s.isEmpty() || filter == null || !filter.test(world, s)) continue;
+            // filter is guaranteed to be non-null due to isShuffleFilter check above
+            if (s.isEmpty() || !filter.test(world, s)) continue;
 
             boolean found = false;
             for (ItemStack c : candidates) {
-                if (ItemStack.isSameItemSameComponents(c, s)) {
+                if (ItemStack.isSameItemSameTags(c, s)) {
                     found = true;
                     break;
                 }
@@ -71,38 +77,22 @@ public class MixinDeployerMovementBehaviour {
         if (candidates.isEmpty()) return; // No matches, let original logic handle
 
         // Check if weighted mode is enabled
-        // The respectNBT setting is stored in Create's data components
+        // The respectNBT setting is stored in Create's NBT data
         // For shuffle filters: respectNBT=true = equal mode, respectNBT=false = weighted mode
         boolean useWeightedMode = false;  // Default to equal mode
         
-        if (filter != null) {
-            try {
-                ItemStack filterItem = filter.item();
-                var components = filterItem.getComponents();
-                
-                // Parse the components string to find respectNBT value
-                String componentsStr = components.toString();
-                
-                if (componentsStr.contains("create:filter_items_respect_nbt=>")) {
-                    int startIndex = componentsStr.indexOf("create:filter_items_respect_nbt=>") + "create:filter_items_respect_nbt=>".length();
-                    String remaining = componentsStr.substring(startIndex);
-                    
-                    int endIndex = remaining.indexOf(',');
-                    if (endIndex == -1) endIndex = remaining.indexOf('}');
-                    if (endIndex == -1) endIndex = remaining.length();
-                    
-                    String valueStr = remaining.substring(0, endIndex).trim();
-                    
-                    if (valueStr.equals("true")) {
-                        useWeightedMode = false; // respectNBT=true means equal mode
-                    } else if (valueStr.equals("false")) {
-                        useWeightedMode = true; // respectNBT=false means weighted mode
-                    }
+        try {
+            ItemStack filterItem = filter.item();
+            if (filterItem.hasTag() && filterItem.getTag() != null) {
+                // In 1.20.1, Create stores filter settings in NBT
+                // The respectNBT key determines the mode
+                if (filterItem.getTag().contains("RespectNBT")) {
+                    boolean respectNBT = filterItem.getTag().getBoolean("RespectNBT");
+                    useWeightedMode = !respectNBT; // respectNBT=false means weighted mode
                 }
-                
-            } catch (Exception e) {
-                // Silently fall back to equal mode
             }
+        } catch (Exception e) {
+            // Silently fall back to equal mode
         }
 
         ItemStack chosen;
@@ -118,7 +108,7 @@ public class MixinDeployerMovementBehaviour {
                     int count = 0;
                     for (int slot = 0; slot < inv.getSlots(); slot++) {
                         ItemStack s = inv.getStackInSlot(slot);
-                        if (!s.isEmpty() && ItemStack.isSameItemSameComponents(s, candidate)) {
+                        if (!s.isEmpty() && ItemStack.isSameItemSameTags(s, candidate)) {
                             count++;
                         }
                     }
@@ -144,7 +134,7 @@ public class MixinDeployerMovementBehaviour {
         }
 
         // Extract only the chosen item type (amount = 1)
-        ItemStack held = ItemHelper.extract(inv, stack -> ItemStack.isSameItemSameComponents(stack, chosen), 1, false);
+        ItemStack held = ItemHelper.extract(inv, stack -> ItemStack.isSameItemSameTags(stack, chosen), 1, false);
         player.setItemInHand(InteractionHand.MAIN_HAND, held);
 
         // Cancel original method to prevent double execution

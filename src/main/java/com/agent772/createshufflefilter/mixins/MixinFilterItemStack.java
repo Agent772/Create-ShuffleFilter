@@ -10,20 +10,16 @@ import com.agent772.createshufflefilter.CreateShuffleFilter;
 
 import net.minecraft.world.item.ItemStack;
 
-@Mixin(FilterItemStack.class)
+@Mixin(value = FilterItemStack.class, remap = false)
 public class MixinFilterItemStack {
 
     @Inject(method = "of(Lnet/minecraft/world/item/ItemStack;)Lcom/simibubi/create/content/logistics/filter/FilterItemStack;", 
             at = @At("HEAD"), cancellable = true)
     private static void onOf(ItemStack filter, CallbackInfoReturnable<FilterItemStack> cir) {
         // Check if this is our shuffle filter
-        if (!filter.isComponentsPatchEmpty() && 
-            filter.getItem() == CreateShuffleFilter.SHUFFLE_FILTER.get()) {
+        if (filter.getItem() == CreateShuffleFilter.SHUFFLE_FILTER.get()) {
             
-            // Remove extra components like Create does for its filters
-            filter.remove(net.minecraft.core.component.DataComponents.ENCHANTMENTS);
-            filter.remove(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS);
-            
+            // In 1.20.1, we don't need to remove components - NBT is handled differently
             // Create a ListFilterItemStack for our shuffle filter using reflection
             try {
                 Class<?> listFilterClass = FilterItemStack.ListFilterItemStack.class;

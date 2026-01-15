@@ -12,7 +12,7 @@ import com.simibubi.create.content.logistics.filter.FilterMenu;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Inventory;
 
-@Mixin(FilterScreen.class)
+@Mixin(value = FilterScreen.class, remap = false)
 public class MixinFilterScreen {
 
     // Shadow the private Component fields so we can modify them

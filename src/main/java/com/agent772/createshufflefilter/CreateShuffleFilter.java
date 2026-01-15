@@ -7,12 +7,12 @@ import com.simibubi.create.AllCreativeModeTabs;
 import com.simibubi.create.content.logistics.filter.FilterItem;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
+import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.fml.common.Mod;
 import com.tterrag.registrate.util.entry.ItemEntry;
 
-// The value here should match an entry in the META-INF/neoforge.mods.toml file
+// The value here should match an entry in the META-INF/mods.toml file
 @Mod(CreateShuffleFilter.MODID)
 public class CreateShuffleFilter {
     public static final String MODID = "createshufflefilter";
@@ -28,7 +28,8 @@ public class CreateShuffleFilter {
         .lang("Shuffle Filter")
         .register();
 
-    public CreateShuffleFilter(IEventBus modEventBus, ModContainer modContainer) {
+    public CreateShuffleFilter() {
+        IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         // Register the registrate to the mod event bus to ensure items are properly registered
         REGISTRATE.registerEventListeners(modEventBus);
         
