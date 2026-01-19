@@ -110,11 +110,6 @@ dependencies {
     }
 }
 
-// Configure mixin annotation processor
-tasks.named('compileJava', JavaCompile).configure {
-    options.compilerArgs.add("-AmixinConfigPackage=com.agent772.createshufflefilter.mixins")
-}
-
 sourceSets.main {
     resources {
         srcDir("src/main/templates")

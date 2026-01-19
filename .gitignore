@@ -25,3 +25,6 @@ run-data
 
 repo
 create_src
+
+# issue logs
+Issue-*

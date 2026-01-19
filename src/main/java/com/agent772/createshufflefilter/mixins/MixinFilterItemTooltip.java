@@ -20,7 +20,13 @@ import net.minecraft.world.level.Level;
 @Mixin(value = FilterItem.class, remap = false)
 public class MixinFilterItemTooltip {
 
-    @Inject(method = "appendHoverText", at = @At("HEAD"))
+    // FilterItem doesn't override appendHoverText, it's inherited from Item
+    // We target the SRG name m_7373_ which is the obfuscated name for appendHoverText
+    // remap=false because FilterItem is from Create mod, not Minecraft
+    @Inject(method = "m_7373_", 
+            at = @At("RETURN"),
+            remap = false,
+            require = 0)
     private void addShuffleFilterTooltip(ItemStack stack, Level level, List<Component> tooltip, TooltipFlag flag, CallbackInfo ci) {
         // Check if this is our shuffle filter
         if (stack.is(CreateShuffleFilter.SHUFFLE_FILTER.get())) {
