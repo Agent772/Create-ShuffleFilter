@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    {
+      "item": "createshufflefilter:shuffle_filter"
+    }
+  ],
+  "result": {
+    "item": "createshufflefilter:shuffle_filter",
+    "count": 1
+  }
+}

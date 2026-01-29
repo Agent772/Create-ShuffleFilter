@@ -3,6 +3,8 @@ plugins {
     id 'maven-publish'
     id 'idea'
     id 'net.neoforged.moddev.legacyforge' version '2.0.107'
+    id 'net.darkhax.curseforgegradle' version '1.1.15'
+    id 'com.modrinth.minotaur' version '2.+'
 }
 
 version = mod_version
@@ -149,4 +151,99 @@ jar {
     manifest.attributes([
             "MixinConfigs": "createshufflefilter.mixins.json"
     ])
+}
+
+// Helper function to get changelog from multiple sources (configuration-cache safe)
+def getChangelogProvider() {
+    return providers.provider {
+        // 1. Check for -Pchangelog property
+        if (project.hasProperty('changelog')) {
+            return project.property('changelog')
+        }
+        
+        // 2. Check for CHANGELOG.md file
+        def changelogFile = file('CHANGELOG.md')
+        if (changelogFile.exists()) {
+            return changelogFile.text
+        }
+        
+        // 3. Try to get latest git commit message
+        try {
+            def stdout = new ByteArrayOutputStream()
+            exec {
+                commandLine 'git', 'log', '-1', '--pretty=%B'
+                standardOutput = stdout
+                ignoreExitValue = true
+            }
+            def message = stdout.toString().trim()
+            if (message && !message.isEmpty()) {
+                return message
+            }
+        } catch (Exception e) {
+            // Git not available or not a git repo
+        }
+        
+        // 4. Fallback to simple version string
+        return "Release ${version}"
+    }
+}
+
+// CurseForge Publishing Configuration
+task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    apiToken = findProperty('curseforge_api_key')
+    
+    def projectId = findProperty('curseforge_project_id')
+    def mainFile = upload(projectId, jar)
+    
+    mainFile.displayName = "${mod_name} ${version}"
+    mainFile.releaseType = 'release'
+    mainFile.changelog = getChangelogProvider()
+    mainFile.changelogType = 'markdown'
+    
+    // Add game versions and mod loader
+    mainFile.addGameVersion(minecraft_version)
+    mainFile.addModLoader('Forge')
+    
+    // Add dependencies
+    mainFile.addRequirement(findProperty('curseforge_create_mod_slug') ?: 'create')
+}
+
+// Modrinth Publishing Configuration
+modrinth {
+    token = providers.gradleProperty('modrinth_token')
+    projectId = project.findProperty('modrinth_project_id')
+    
+    versionNumber = version
+    versionName = "${mod_name} ${version}"
+    versionType = 'release' // 'alpha', 'beta', or 'release'
+    
+    uploadFile = tasks.jar
+    
+    gameVersions = [minecraft_version]
+    loaders = ['forge']
+    
+    changelog = getChangelogProvider()
+    
+    dependencies {
+        required.project 'create'
+    }
+}
+
+// Convenience tasks for publishing
+tasks.register('releaseCurseForge') {
+    group = 'upload'
+    description = 'Builds and uploads the jar to CurseForge'
+    dependsOn 'publishCurseForge'
+}
+
+tasks.register('releaseModrinth') {
+    group = 'upload'
+    description = 'Builds and uploads the jar to Modrinth'
+    dependsOn 'modrinth'
+}
+
+tasks.register('release') {
+    group = 'upload'
+    description = 'Builds and uploads the jar to both CurseForge and Modrinth'
+    dependsOn 'releaseCurseForge', 'releaseModrinth'
 }
