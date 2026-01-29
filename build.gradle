@@ -195,7 +195,7 @@ task publishCurseForge(type: net.darkhax.curseforgegradle.TaskPublishCurseForge)
     def projectId = findProperty('curseforge_project_id')
     def mainFile = upload(projectId, jar)
     
-    mainFile.displayName = "${mod_name} ${version}"
+    mainFile.displayName = "${mod_name} ${version}-forge"
     mainFile.releaseType = 'release'
     mainFile.changelog = getChangelogProvider()
     mainFile.changelogType = 'markdown'
@@ -214,7 +214,7 @@ modrinth {
     projectId = project.findProperty('modrinth_project_id')
     
     versionNumber = version
-    versionName = "${mod_name} ${version}"
+    versionName = "${mod_name} ${version}-forge"
     versionType = 'release' // 'alpha', 'beta', or 'release'
     
     uploadFile = tasks.jar
