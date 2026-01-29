@@ -221,35 +221,39 @@ tasks.named('build') {
     finalizedBy 'copyJarToTester'
 }
 
-// Helper function to get changelog from multiple sources
-def getChangelog() {
-    // 1. Check for -Pchangelog property
-    if (project.hasProperty('changelog')) {
-        return project.property('changelog')
-    }
-    
-    // 2. Check for CHANGELOG.md file
-    def changelogFile = file('CHANGELOG.md')
-    if (changelogFile.exists()) {
-        return changelogFile.text
-    }
-    
-    // 3. Try to get latest git commit message
-    try {
-        def gitProcess = 'git log -1 --pretty=%B'.execute()
-        gitProcess.waitFor()
-        if (gitProcess.exitValue() == 0) {
-            def message = gitProcess.text.trim()
+// Helper function to get changelog from multiple sources (configuration-cache safe)
+def getChangelogProvider() {
+    return providers.provider {
+        // 1. Check for -Pchangelog property
+        if (project.hasProperty('changelog')) {
+            return project.property('changelog')
+        }
+        
+        // 2. Check for CHANGELOG.md file
+        def changelogFile = file('CHANGELOG.md')
+        if (changelogFile.exists()) {
+            return changelogFile.text
+        }
+        
+        // 3. Try to get latest git commit message
+        try {
+            def stdout = new ByteArrayOutputStream()
+            exec {
+                commandLine 'git', 'log', '-1', '--pretty=%B'
+                standardOutput = stdout
+                ignoreExitValue = true
+            }
+            def message = stdout.toString().trim()
             if (message && !message.isEmpty()) {
                 return message
             }
+        } catch (Exception e) {
+            // Git not available or not a git repo
         }
-    } catch (Exception e) {
-        // Git not available or not a git repo
+        
+        // 4. Fallback to simple version string
+        return "Release ${version}"
     }
-    
-    // 4. Fallback to simple version string
-    return "Release ${version}"
 }
 
 // CurseForge Publishing Configuration
@@ -272,8 +276,11 @@ curseforge {
                     
                     changelog {
                         format = io.github.themrmilchmann.gradle.publish.curseforge.ChangelogFormat.MARKDOWN
-                        content = providers.provider { getChangelog() }
+                        content = getChangelogProvider()
                     }
+                    
+                    clientRequired = true
+                    serverRequired = true
                     
                     relations {
                         requiredDependency(project.findProperty('curseforge_create_mod_slug') ?: 'create')
@@ -298,7 +305,7 @@ modrinth {
     gameVersions = [minecraft_version]
     loaders = ['neoforge']
     
-    changelog = providers.provider { getChangelog() }
+    changelog = getChangelogProvider()
     
     dependencies {
         required.project 'create'
@@ -309,7 +316,7 @@ modrinth {
 tasks.register('releaseCurseForge') {
     group = 'upload'
     description = 'Builds and uploads the jar to CurseForge'
-    dependsOn 'publishNeoForgeToCurseForge'
+    dependsOn 'publishNeoForgePublicationToCurseForge'
 }
 
 tasks.register('releaseModrinth') {
