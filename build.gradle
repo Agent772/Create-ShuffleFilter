@@ -2,6 +2,8 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     id 'net.neoforged.moddev' version '2.0.110'
+    id 'io.github.themrmilchmann.curseforge-publish' version '0.8.0'
+    id 'com.modrinth.minotaur' version '2.+'
     id 'idea'
 }
 
@@ -217,4 +219,107 @@ tasks.register('copyJarToTester', Copy) {
 tasks.named('build') {
     // Use task name string for finalizedBy to stay configuration-cache friendly
     finalizedBy 'copyJarToTester'
+}
+
+// Helper function to get changelog from multiple sources
+def getChangelog() {
+    // 1. Check for -Pchangelog property
+    if (project.hasProperty('changelog')) {
+        return project.property('changelog')
+    }
+    
+    // 2. Check for CHANGELOG.md file
+    def changelogFile = file('CHANGELOG.md')
+    if (changelogFile.exists()) {
+        return changelogFile.text
+    }
+    
+    // 3. Try to get latest git commit message
+    try {
+        def gitProcess = 'git log -1 --pretty=%B'.execute()
+        gitProcess.waitFor()
+        if (gitProcess.exitValue() == 0) {
+            def message = gitProcess.text.trim()
+            if (message && !message.isEmpty()) {
+                return message
+            }
+        }
+    } catch (Exception e) {
+        // Git not available or not a git repo
+    }
+    
+    // 4. Fallback to simple version string
+    return "Release ${version}"
+}
+
+// CurseForge Publishing Configuration
+curseforge {
+    // API token from user gradle.properties
+    apiToken = providers.gradleProperty('curseforge_api_key')
+    
+    publications {
+        // The plugin auto-creates a 'neoForge' publication when ModDevGradle is detected
+        // We configure it here
+        neoForge {
+            projectId = project.findProperty('curseforge_project_id')
+            
+            artifacts {
+                main {
+                    from(tasks.jar)
+                    
+                    displayName = "${mod_name} ${version}"
+                    releaseType = io.github.themrmilchmann.gradle.publish.curseforge.ReleaseType.RELEASE
+                    
+                    changelog {
+                        format = io.github.themrmilchmann.gradle.publish.curseforge.ChangelogFormat.MARKDOWN
+                        content = providers.provider { getChangelog() }
+                    }
+                    
+                    relations {
+                        requiredDependency(project.findProperty('curseforge_create_mod_slug') ?: 'create')
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Modrinth Publishing Configuration
+modrinth {
+    token = providers.gradleProperty('modrinth_token')
+    projectId = project.findProperty('modrinth_project_id')
+    
+    versionNumber = version
+    versionName = "${mod_name} ${version}"
+    versionType = 'release' // 'alpha', 'beta', or 'release'
+    
+    uploadFile = tasks.jar
+    
+    gameVersions = [minecraft_version]
+    loaders = ['neoforge']
+    
+    changelog = providers.provider { getChangelog() }
+    
+    dependencies {
+        required.project 'create'
+    }
+}
+
+// Convenience tasks for publishing
+tasks.register('releaseCurseForge') {
+    group = 'upload'
+    description = 'Builds and uploads the jar to CurseForge'
+    dependsOn 'publishNeoForgeToCurseForge'
+}
+
+tasks.register('releaseModrinth') {
+    group = 'upload'
+    description = 'Builds and uploads the jar to Modrinth'
+    dependsOn 'modrinth'
+}
+
+tasks.register('release') {
+    group = 'upload'
+    description = 'Builds and uploads the jar to both CurseForge and Modrinth'
+    dependsOn 'releaseCurseForge', 'releaseModrinth'
 }
