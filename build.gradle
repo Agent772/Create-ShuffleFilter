@@ -23,6 +23,7 @@ repositories {
     // Add here additional repositories if required by some of the dependencies below.
     maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
     maven { url = "https://maven.ithundxr.dev/snapshots" } // Registrate
+    maven { url = "https://maven.blamejared.com" } // JEI
 }
 
 base {
@@ -123,12 +124,12 @@ dependencies {
     runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}")
     implementation("com.tterrag.registrate:Registrate:${registrate_version}")
 
-    // Example optional mod dependency with JEI
+    // JEI integration for drag and drop support
     // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    // compileOnly "mezz.jei:jei-${mc_version}-common-api:${jei_version}"
-    // compileOnly "mezz.jei:jei-${mc_version}-neoforge-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${jei_mc_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${jei_mc_version}-neoforge-api:${jei_version}"
     // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    // localRuntime "mezz.jei:jei-${mc_version}-neoforge:${jei_version}"
+    localRuntime "mezz.jei:jei-${jei_mc_version}-neoforge:${jei_version}"
 
     // Example mod dependency using a mod jar from ./libs with a flat dir repository
     // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
@@ -279,8 +280,8 @@ curseforge {
                         content = getChangelogProvider()
                     }
                     
-                    clientRequired = true
-                    serverRequired = true
+                    // clientRequired = true
+                    // serverRequired = true
                     
                     relations {
                         requiredDependency(project.findProperty('curseforge_create_mod_slug') ?: 'create')
@@ -312,17 +313,44 @@ modrinth {
     }
 }
 
+// Safety confirmation task
+tasks.register('confirmRelease') {
+    group = 'upload'
+    description = 'Prompts for confirmation before releasing'
+    doLast {
+        // Skip confirmation if -Pconfirm=yes is passed
+        if (project.hasProperty('confirm') && project.property('confirm') == 'yes') {
+            println 'Confirmation bypassed via -Pconfirm=yes'
+            return
+        }
+        
+        def console = System.console()
+        if (console) {
+            def answer = console.readLine('\n⚠️  You are about to publish to production! Type "yes" to confirm: ')
+            if (answer?.toLowerCase() != 'yes') {
+                throw new GradleException('Release cancelled by user.')
+            }
+            println '✓ Release confirmed. Proceeding...'
+        } else {
+            // Running in non-interactive environment (e.g., IDE)
+            println '⚠️  WARNING: No console available for confirmation.'
+            println '   To bypass this check, run: gradlew release -Pconfirm=yes'
+            throw new GradleException('Cannot confirm release in non-interactive mode. Use -Pconfirm=yes to bypass.')
+        }
+    }
+}
+
 // Convenience tasks for publishing
 tasks.register('releaseCurseForge') {
     group = 'upload'
     description = 'Builds and uploads the jar to CurseForge'
-    dependsOn 'publishNeoForgePublicationToCurseForge'
+    dependsOn 'confirmRelease', 'publishNeoForgePublicationToCurseForge'
 }
 
 tasks.register('releaseModrinth') {
     group = 'upload'
     description = 'Builds and uploads the jar to Modrinth'
-    dependsOn 'modrinth'
+    dependsOn 'confirmRelease', 'modrinth'
 }
 
 tasks.register('release') {

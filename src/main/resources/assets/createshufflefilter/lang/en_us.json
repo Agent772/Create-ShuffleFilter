@@ -1,10 +1,29 @@
 {
   "itemGroup.createshufflefilter": "Create Shuffle Filter",
-  "item.createshufflefilter.shuffle_filter": "Shuffle Filter",
   
-  "_comment": "Tooltip entries for shuffle filter - for future translation support",
-  "item.createshufflefilter.shuffle_filter.tooltip.summary": "Randomizes item selection from filtered matches",
-  "item.createshufflefilter.shuffle_filter.tooltip.behaviour": "Behaviour",
+  "_comment_items": "Item names",
+  "item.createshufflefilter.shuffle_filter": "Shuffle Filter",
+  "item.createshufflefilter.weighted_shuffle_filter": "Weighted Shuffle Filter",
+  
+  "_comment_gui": "GUI Screen translations",
+  "screen.createshufflefilter.shuffle_filter.title": "Equal Shuffle Filter",
+  "screen.createshufflefilter.weighted_shuffle_filter.title": "Weighted Shuffle Filter",
+  "gui.createshufflefilter.mode.equal": "Equal Mode",
+  "gui.createshufflefilter.mode.weighted": "Weighted Mode",
+  "gui.createshufflefilter.clear": "Clear",
+  "gui.createshufflefilter.save": "Save",
+  
+  "_comment_tooltips": "Tooltip entries for shuffle filters",
+  "item.createshufflefilter.shuffle_filter.tooltip.summary": "All blocks have equal selection probability",
+  "item.createshufflefilter.shuffle_filter.tooltip.behaviour": "Supports up to 18 different blocks",
+  "item.createshufflefilter.shuffle_filter.tooltip.usage": "Right-click to configure blocks",
+  
+  "item.createshufflefilter.weighted_shuffle_filter.tooltip.summary": "Blocks have configurable probability weights",
+  "item.createshufflefilter.weighted_shuffle_filter.tooltip.behaviour": "Supports up to 9 blocks with percentage weights",
+  "item.createshufflefilter.weighted_shuffle_filter.tooltip.usage": "Right-click to configure blocks and weights",
+  
+  "_comment_legacy": "Legacy tooltip entries (for reference)",
+  "item.createshufflefilter.shuffle_filter.tooltip.summary.old": "Randomizes item selection from filtered matches",
   "item.createshufflefilter.shuffle_filter.tooltip.behaviour.description": "Selects items randomly from those that pass the filter.",
   "item.createshufflefilter.shuffle_filter.tooltip.equal_mode": "Equal Mode",
   "item.createshufflefilter.shuffle_filter.tooltip.equal_mode.1": "All matching items have equal selection chance",

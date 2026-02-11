@@ -1,0 +1,7 @@
+{
+  "type": "minecraft:stonecutting",
+  "ingredient": {
+    "item": "createshufflefilter:shuffle_filter"
+  },
+  "result": "createshufflefilter:weighted_shuffle_filter"
+}
