@@ -25,6 +25,7 @@ run-data
 
 repo
 other_src
+other_src
 Issue*
 Issue*/*
 other_src
