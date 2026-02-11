@@ -4,9 +4,14 @@
   "package": "com.agent772.createshufflefilter.mixins",
   "refmap": "mixins.createshufflefilter.refmap.json",
   "mixins": [
+    "BlockEntityBehaviourAccessor",
     "MixinFilterItemTooltip",
-    "MixinFilterItemStack",
-    "MixinDeployerMovementBehaviour"
+    "MixinFilteringBehaviour",
+    "MixinDeployerBlockEntity",
+    "MixinDeployerMovementBehaviour",
+    "MixinRollerBlockEntity",
+    "MixinRollerMovementBehaviour",
+    "MixinRollerFallingBlock"
   ],
   "client": [
     "MixinFilterScreen"

@@ -2,9 +2,13 @@ package com.agent772.createshufflefilter;
 
 import org.slf4j.Logger;
 
+import com.agent772.createshufflefilter.component.ModDataComponents;
+import com.agent772.createshufflefilter.component.ShuffleBlockList;
+import com.agent772.createshufflefilter.item.ShuffleFilterItem;
+import com.agent772.createshufflefilter.item.WeightedShuffleFilterItem;
+import com.agent772.createshufflefilter.menu.ModMenuTypes;
 import com.mojang.logging.LogUtils;
 import com.simibubi.create.AllCreativeModeTabs;
-import com.simibubi.create.content.logistics.filter.FilterItem;
 import com.simibubi.create.foundation.data.CreateRegistrate;
 
 import net.neoforged.bus.api.IEventBus;
@@ -22,13 +26,33 @@ public class CreateShuffleFilter {
             .create(MODID)
             .defaultCreativeTab(AllCreativeModeTabs.BASE_CREATIVE_TAB.getKey());
 
-    // Create 6.0.8 uses FilterItem::regular which automatically creates a ListFilterItem instance
-    // This handles all the filter behavior we need, no custom FilterItem mixin required
-    public static final ItemEntry<? extends FilterItem> SHUFFLE_FILTER = REGISTRATE.item("shuffle_filter", FilterItem::regular)
-        .lang("Shuffle Filter")
-        .register();
+    // Main shuffle filter (equal probability)
+    public static final ItemEntry<ShuffleFilterItem> SHUFFLE_FILTER = 
+        REGISTRATE.item("shuffle_filter", ShuffleFilterItem::new)
+            .properties(p -> p
+                .stacksTo(1)
+                .component(ModDataComponents.SHUFFLE_BLOCK_LIST.get(), ShuffleBlockList.EMPTY)
+            )
+            .lang("Shuffle Filter")
+            .register();
+    
+    // Weighted shuffle filter (configurable weights)
+    public static final ItemEntry<WeightedShuffleFilterItem> WEIGHTED_SHUFFLE_FILTER = 
+        REGISTRATE.item("weighted_shuffle_filter", WeightedShuffleFilterItem::new)
+            .properties(p -> p
+                .stacksTo(1)
+                .component(ModDataComponents.SHUFFLE_BLOCK_LIST.get(), ShuffleBlockList.EMPTY)
+            )
+            .lang("Weighted Shuffle Filter")
+            .register();
 
     public CreateShuffleFilter(IEventBus modEventBus, ModContainer modContainer) {
+        // Register data components
+        ModDataComponents.DATA_COMPONENTS.register(modEventBus);
+        
+        // Register menu types
+        ModMenuTypes.MENUS.register(modEventBus);
+        
         // Register the registrate to the mod event bus to ensure items are properly registered
         REGISTRATE.registerEventListeners(modEventBus);
         
