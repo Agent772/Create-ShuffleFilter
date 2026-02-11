@@ -279,9 +279,6 @@ curseforge {
                         content = getChangelogProvider()
                     }
                     
-                    clientRequired = true
-                    serverRequired = true
-                    
                     relations {
                         requiredDependency(project.findProperty('curseforge_create_mod_slug') ?: 'create')
                     }
