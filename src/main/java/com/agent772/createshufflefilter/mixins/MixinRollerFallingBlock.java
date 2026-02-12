@@ -58,11 +58,6 @@ public class MixinRollerFallingBlock {
             
             // Activate stall
             context.stall = true;
-            
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.debug(
-                "Falling block broken at {}, stalling for 10 ticks to let physics settle", 
-                pos
-            );
         }
     }
 }

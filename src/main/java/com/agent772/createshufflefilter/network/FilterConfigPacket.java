@@ -5,7 +5,6 @@ import com.agent772.createshufflefilter.component.ModDataComponents;
 import com.agent772.createshufflefilter.component.ShuffleBlockList;
 import com.agent772.createshufflefilter.component.ShuffleMode;
 import com.agent772.createshufflefilter.item.BaseShuffleFilterItem;
-import io.netty.buffer.ByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;

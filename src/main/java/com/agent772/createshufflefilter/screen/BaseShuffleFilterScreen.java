@@ -400,8 +400,13 @@ public abstract class BaseShuffleFilterScreen<T extends AbstractContainerMenu> e
             }
             if (saveButton.isHovered) {
                 saveConfiguration();
-                if (minecraft != null && minecraft.player != null) {
-                    minecraft.player.closeContainer();
+                // Player should always exist here, but check defensively
+                var mc = minecraft;
+                if (mc != null) {
+                    var player = mc.player;
+                    if (player != null) {
+                        player.closeContainer();
+                    }
                 }
                 return true;
             }

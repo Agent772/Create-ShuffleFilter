@@ -6,7 +6,6 @@ import com.agent772.createshufflefilter.menu.WeightedShuffleFilterMenu;
 import com.agent772.createshufflefilter.network.FilterConfigPacket;
 import com.agent772.createshufflefilter.screen.widget.WeightEditBox;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
@@ -335,14 +334,10 @@ public class WeightedShuffleFilterScreen extends BaseShuffleFilterScreen<Weighte
         class FieldInfo {
             WeightEditBox field;
             int currentWeight;
-            int index;
-            boolean inRow1;
             
-            FieldInfo(WeightEditBox field, int weight, int index, boolean inRow1) {
+            FieldInfo(WeightEditBox field, int weight) {
                 this.field = field;
                 this.currentWeight = weight;
-                this.index = index;
-                this.inRow1 = inRow1;
             }
         }
         
@@ -354,9 +349,7 @@ public class WeightedShuffleFilterScreen extends BaseShuffleFilterScreen<Weighte
             if (row1Slots.get(i).hasBlock() && i < row1WeightFields.size()) {
                 otherFields.add(new FieldInfo(
                     row1WeightFields.get(i),
-                    row1WeightFields.get(i).getWeight(),
-                    i,
-                    true
+                    row1WeightFields.get(i).getWeight()
                 ));
             }
         }
@@ -368,9 +361,7 @@ public class WeightedShuffleFilterScreen extends BaseShuffleFilterScreen<Weighte
             if (row2Slots.get(i).hasBlock() && i < row2WeightFields.size()) {
                 otherFields.add(new FieldInfo(
                     row2WeightFields.get(i),
-                    row2WeightFields.get(i).getWeight(),
-                    globalIndex,
-                    false
+                    row2WeightFields.get(i).getWeight()
                 ));
             }
         }

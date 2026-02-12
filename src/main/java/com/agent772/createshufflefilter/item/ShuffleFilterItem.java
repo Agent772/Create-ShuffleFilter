@@ -41,7 +41,7 @@ public class ShuffleFilterItem extends BaseShuffleFilterItem {
     }
     
     @Override
-    public AbstractContainerMenu createMenu(int containerId, @Nonnull Inventory playerInv, @Nonnull Player player) {
+    public AbstractContainerMenu createMenu(int containerId, Inventory playerInv, Player player) {
         // Find the filter in the player's inventory - check main hand first, then offhand
         int handSlot = -1;
         if (player.getMainHandItem().getItem() == this) {
@@ -54,7 +54,7 @@ public class ShuffleFilterItem extends BaseShuffleFilterItem {
     }
     
     @Override
-    public InteractionResultHolder<ItemStack> use(@Nonnull Level level, @Nonnull Player player, @Nonnull InteractionHand hand) {
+    public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
         
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {

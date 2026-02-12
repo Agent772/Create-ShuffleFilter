@@ -99,8 +99,10 @@ public class BlockSlotWidget extends AbstractWidget {
         if (isHovered) {
             if (button == 0) {
                 // Left click: select item/block from mouse cursor
-                if (Minecraft.getInstance().player != null) {
-                    ItemStack mouseStack = Minecraft.getInstance().player.containerMenu.getCarried();
+                Minecraft mc = Minecraft.getInstance();
+                if (mc.player != null) {
+                    var player = mc.player;
+                    ItemStack mouseStack = player.containerMenu.getCarried();
                     if (!mouseStack.isEmpty()) {
                         setItem(mouseStack);
                         if (onChanged != null) {

@@ -53,7 +53,8 @@ public class MixinDeployerMovementBehaviour {
         FilterItemStack filter = context.getFilterFromBE();
         if (filter == null || filter.item().isEmpty()) return;
         
-        Item filterItem = filter.item().getItem();
+        ItemStack filterStack = filter.item();
+        Item filterItem = filterStack.getItem();
         
         // Check if this is one of our shuffle filters
         if (!(filterItem instanceof BaseShuffleFilterItem)) {
@@ -67,7 +68,7 @@ public class MixinDeployerMovementBehaviour {
         if (inv == null) return;
 
         // Get configuration from data components (FAST - direct access, ~10ns)
-        ShuffleBlockList blockList = filter.item().getOrDefault(
+        ShuffleBlockList blockList = filterStack.getOrDefault(
             ModDataComponents.SHUFFLE_BLOCK_LIST.get(), 
             ShuffleBlockList.EMPTY
         );

@@ -26,7 +26,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.neoforged.neoforge.items.IItemHandler;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Random;
@@ -98,37 +97,27 @@ public class MixinRollerMovementBehaviour {
         Level world = context.world;
         if (world.isClientSide) return;
 
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("RollerMovementBehaviour.getStateToPaveWith called!");
-
         // Get the filter from the contraption context
         FilterItemStack filter = context.getFilterFromBE();
         
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Filter: {}", filter);
-        
         if (filter == null || filter.item().isEmpty()) return;
         
-        Item filterItem = filter.item().getItem();
-        
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Filter item class: {}", filterItem.getClass().getSimpleName());
+        ItemStack filterStack = filter.item();
+        Item filterItem = filterStack.getItem();
         
         // Check if this is one of our shuffle filters
         if (!(filterItem instanceof BaseShuffleFilterItem)) {
             return; // Not our filter, let Create's logic run
         }
-        
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Detected shuffle filter!");
 
         // Get configuration from data components (same as deployers)
-        ShuffleBlockList blockList = filter.item().getOrDefault(
+        ShuffleBlockList blockList = filterStack.getOrDefault(
             ModDataComponents.SHUFFLE_BLOCK_LIST.get(), 
             ShuffleBlockList.EMPTY
         );
         
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Block list size: {}", blockList.blocks().size());
-        
         if (blockList.isEmpty()) {
             // Filter is empty, place nothing
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Block list is empty!");
             cir.setReturnValue(null);
             return;
         }
@@ -139,12 +128,9 @@ public class MixinRollerMovementBehaviour {
         // Get contraption inventory
         IItemHandler inv = context.contraption.getStorage().getAllItems();
         if (inv == null) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("No inventory found!");
             cir.setReturnValue(null);
             return;
         }
-
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selecting block type for roller...");
 
         // Get current position from context for deterministic selection
         BlockPos currentPos = BlockPos.containing(context.position);
@@ -162,11 +148,8 @@ public class MixinRollerMovementBehaviour {
             inv
         );
         
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected item: {}", selected);
-        
         if (selected.isEmpty()) {
             // No blocks available in inventory
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected item is empty!");
             createshufflefilter$lastSelectedBlock = ItemStack.EMPTY;
             cir.setReturnValue(net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
             return;
@@ -179,18 +162,14 @@ public class MixinRollerMovementBehaviour {
         if (selected.getItem() instanceof net.minecraft.world.item.BlockItem blockItem) {
             BlockState state = blockItem.getBlock().defaultBlockState();
             
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected BlockItem: {}", blockItem);
-            
             // Handle slabs: if block has TYPE property, set to DOUBLE
             if (state.hasProperty(SlabBlock.TYPE)) {
                 state = state.setValue(SlabBlock.TYPE, SlabType.DOUBLE);
             }
             
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Returning block state: {}", state);
             cir.setReturnValue(state);
         } else {
             // Not a block item
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected item is not a BlockItem!");
             cir.setReturnValue(Blocks.AIR.defaultBlockState());
         }
     }
@@ -218,7 +197,8 @@ public class MixinRollerMovementBehaviour {
         FilterItemStack filter = context.getFilterFromBE();
         if (filter == null || filter.item().isEmpty()) return;
 
-        Item filterItem = filter.item().getItem();
+        ItemStack filterStack = filter.item();
+        Item filterItem = filterStack.getItem();
         if (!(filterItem instanceof BaseShuffleFilterItem)) {
             return; // Not our filter - let Create handle it
         }
@@ -231,7 +211,6 @@ public class MixinRollerMovementBehaviour {
                 // Check if the block itself is already a slab
                 BlockState blockState = fullBlock.defaultBlockState();
                 if (blockState.hasProperty(SlabBlock.TYPE)) {
-                    com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected block is already a slab: {}", fullBlock);
                     createshufflefilter$slabAvailable = true;
                     cir.setReturnValue(blockState.setValue(SlabBlock.TYPE, SlabType.BOTTOM));
                     return;
@@ -242,7 +221,6 @@ public class MixinRollerMovementBehaviour {
                 if (!slabStack.isEmpty() && slabStack.getItem() instanceof net.minecraft.world.item.BlockItem slabBlockItem) {
                     BlockState slabState = slabBlockItem.getBlock().defaultBlockState();
                     if (slabState.hasProperty(SlabBlock.TYPE)) {
-                        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Found slab variant {} for {} in inventory", slabBlockItem.getBlock(), fullBlock);
                         createshufflefilter$slabAvailable = true;
                         // DON'T update lastSelectedBlock - it will get reset on next getStateToPaveWith call anyway
                         // Let tryFill handle slab extraction based on what toPlace needs
@@ -251,19 +229,15 @@ public class MixinRollerMovementBehaviour {
                     }
                 }
                 
-                com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("No slab variant found for {} in inventory, checking registry...", fullBlock);
                 // Check if selected block CAN be crafted into a slab
                 Block slabBlock = findSlabBlockForFullBlock(fullBlock);
                 if (slabBlock != null) {
-                    com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected block {} can be crafted to slab: {}", fullBlock, slabBlock);
                     createshufflefilter$slabAvailable = true;
                     cir.setReturnValue(slabBlock.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM));
                     return;
                 }
                 
                 // Selected block has NO slab variant - try to find alternate block from filter with slab
-                com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected block {} has no slab variant, searching for alternate...", fullBlock);
-                
                 ShuffleBlockList blockList = filter.item().getOrDefault(
                     ModDataComponents.SHUFFLE_BLOCK_LIST.get(),
                     ShuffleBlockList.EMPTY
@@ -281,7 +255,6 @@ public class MixinRollerMovementBehaviour {
                     
                     // Check if alternate is already a slab
                     if (altBlockState.hasProperty(SlabBlock.TYPE)) {
-                        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Found alternate slab in filter: {}", altFullBlock);
                         createshufflefilter$slabAvailable = true;
                         createshufflefilter$lastSelectedBlock = alternateWithSlab.copy(); // Switch to this block
                         cir.setReturnValue(altBlockState.setValue(SlabBlock.TYPE, SlabType.BOTTOM));
@@ -291,7 +264,6 @@ public class MixinRollerMovementBehaviour {
                     // Check if alternate can be crafted to slab
                     Block altSlabBlock = findSlabBlockForFullBlock(altFullBlock);
                     if (altSlabBlock != null) {
-                        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Found alternate block {} with slab variant: {}", altFullBlock, altSlabBlock);
                         createshufflefilter$slabAvailable = true;
                         createshufflefilter$lastSelectedBlock = alternateWithSlab.copy(); // Switch to this block
                         cir.setReturnValue(altSlabBlock.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM));
@@ -300,7 +272,6 @@ public class MixinRollerMovementBehaviour {
                 }
                 
                 // No blocks in filter have slab variants
-                com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("No blocks in filter have slab variants - cannot place slab");
                 createshufflefilter$slabAvailable = false;
             }
         }
@@ -330,18 +301,16 @@ public class MixinRollerMovementBehaviour {
         FilterItemStack filter = context.getFilterFromBE();
         if (filter == null || filter.item().isEmpty()) return;
 
-        Item filterItem = filter.item().getItem();
+        ItemStack filterStack = filter.item();
+        Item filterItem = filterStack.getItem();
         if (!(filterItem instanceof BaseShuffleFilterItem)) {
             return; // Not our filter, let Create handle it
         }
-
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("HandleShuffleFilterExtraction: tryFill called");
 
         Level level = context.world;
         
         // Check if world position is loaded
         if (!level.isLoaded(targetPos)) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Position not loaded");
             // Can't reference PaveResult.FAIL directly, but we can return early and let Create handle it
             return;
         }
@@ -349,7 +318,6 @@ public class MixinRollerMovementBehaviour {
         // Check if block already matches
         BlockState existing = level.getBlockState(targetPos);
         if (existing.is(toPlace.getBlock())) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Block already matches - PASS");
             // Block already correct - no action needed but don't fail
             // Let Create's logic handle the PASS case
             return;
@@ -359,38 +327,27 @@ public class MixinRollerMovementBehaviour {
         if (!existing.is(net.minecraft.tags.BlockTags.LEAVES) && !existing.canBeReplaced()
             && (!existing.getCollisionShape(level, targetPos).isEmpty()
                 || existing.is(net.minecraft.tags.BlockTags.PORTALS))) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Position not replaceable - FAIL");
             // Position not replaceable - let Create handle the FAIL
             return;
         }
 
         // Extract the item we selected earlier
         if (createshufflefilter$lastSelectedBlock.isEmpty()) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("No block selected!");
             return; // Let Create's logic fail properly
         }
-
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Extracting for toPlace: {}, lastSelected: {}", toPlace.getBlock(), createshufflefilter$lastSelectedBlock);
         
         // Determine what we should try to extract based on what toPlace needs
         ItemStack toExtract = createshufflefilter$lastSelectedBlock;
         
         // If toPlace is a slab (BOTTOM/TOP, not DOUBLE), try to extract slab variant first
         if (toPlace.hasProperty(SlabBlock.TYPE) && toPlace.getValue(SlabBlock.TYPE) != SlabType.DOUBLE) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("toPlace needs a slab ({}), checking for slab variant", toPlace.getValue(SlabBlock.TYPE));
-            
             if (createshufflefilter$lastSelectedBlock.getItem() instanceof net.minecraft.world.item.BlockItem blockItem) {
                 Block fullBlock = blockItem.getBlock();
                 
                 // First try to find pre-crafted slab in inventory
                 ItemStack slabStack = findSlabVariantInInventory(fullBlock, context.contraption.getStorage().getAllItems());
                 if (!slabStack.isEmpty()) {
-                    com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Found pre-crafted slab in inventory: {}", slabStack);
                     toExtract = slabStack;
-                } else {
-                    com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("No pre-crafted slab found, will try to craft from full block");
-                    // Keep toExtract as full block - Create will craft it into slab
-                    // But first check if the full block actually exists in inventory
                 }
             }
         }
@@ -426,7 +383,6 @@ public class MixinRollerMovementBehaviour {
             );
             
             if (fallbackResult.isEmpty()) {
-                com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("No fallback blocks available");
                 return; // Let Create's logic fail properly
             }
             
@@ -440,14 +396,11 @@ public class MixinRollerMovementBehaviour {
                 if (originalToPlace.hasProperty(SlabBlock.TYPE) && toPlace.hasProperty(SlabBlock.TYPE)) {
                     SlabType originalType = originalToPlace.getValue(SlabBlock.TYPE);
                     toPlace = toPlace.setValue(SlabBlock.TYPE, originalType);
-                    com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Fallback: preserving slab type {}", originalType);
                 } else if (toPlace.hasProperty(SlabBlock.TYPE)) {
                     // Default to DOUBLE for full block replacement
                     toPlace = toPlace.setValue(SlabBlock.TYPE, SlabType.DOUBLE);
                 }
             }
-            
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Using fallback block: {}", held);
         }
         
         // CRITICAL CHECK: If slab was needed but none available (neither pre-crafted nor craftable), DON'T place
@@ -457,14 +410,12 @@ public class MixinRollerMovementBehaviour {
             
             // If we need a BOTTOM or TOP slab (not DOUBLE/full block) but no slab was found
             if (neededType != SlabType.DOUBLE && !createshufflefilter$slabAvailable) {
-                com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Slab needed but not available (no slab variant exists) - placing NOTHING");
                 return; // Don't place - slab doesn't exist for this material
             }
         }
 
         // Place the block
         level.setBlockAndUpdate(targetPos, toPlace);
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Block placed successfully!");
         
         // We need to return SUCCESS, but since PaveResult is private, we'll use reflection
         // or just cancel and let the block placement speak for itself
@@ -511,7 +462,8 @@ public class MixinRollerMovementBehaviour {
         FilterItemStack filter = context.getFilterFromBE();
         if (filter == null || filter.item().isEmpty()) return;
 
-        Item filterItem = filter.item().getItem();
+        ItemStack filterStack = filter.item();
+        Item filterItem = filterStack.getItem();
         if (!(filterItem instanceof BaseShuffleFilterItem)) {
             return; // Not our filter - let Create's logic run
         }
@@ -522,8 +474,6 @@ public class MixinRollerMovementBehaviour {
         int scrollValue = context.blockEntityData.getInt("ScrollValue");
         // RollingMode enum: PAVE=0, FILL=1, WIDE_FILL=2, SLOPE=3, TUNNEL_PAVE=4
         
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("getPositionsToBreak: shuffle filter, mode={}", scrollValue);
-
         // For shuffle filters, determine startingY based on whether we have blocks available
         BlockState stateToPaveWith = this.getStateToPaveWith(context);
         int startingY = 1; // Default: don't break ground level        
@@ -575,7 +525,8 @@ public class MixinRollerMovementBehaviour {
         FilterItemStack filter = context.getFilterFromBE();
         if (filter == null || filter.item().isEmpty()) return;
 
-        Item filterItem = filter.item().getItem();
+        ItemStack filterStack = filter.item();
+        Item filterItem = filterStack.getItem();
         if (!(filterItem instanceof BaseShuffleFilterItem)) {
             return; // Not our filter - let Create's logic decide
         }
@@ -590,7 +541,6 @@ public class MixinRollerMovementBehaviour {
         
         // Don't break rails!
         if (stateAtTarget.is(net.minecraft.tags.BlockTags.RAILS)) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Skipping rail at {}", target);
             cir.setReturnValue(false);
             return;
         }
@@ -600,7 +550,6 @@ public class MixinRollerMovementBehaviour {
             ItemStack entryStack = entry.getItemStack();
             if (entryStack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem) {
                 if (stateAtTarget.is(blockItem.getBlock())) {
-                    com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Keeping filter block {} at {}", blockItem.getBlock(), target);
                     cir.setReturnValue(false); // Don't break - it's in our filter
                     return;
                 }
@@ -704,8 +653,6 @@ public class MixinRollerMovementBehaviour {
         // If selected item is a nested shuffle filter, recursively resolve it
         // This maintains position-based determinism throughout the cascade
         if (item instanceof BaseShuffleFilterItem) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Selected nested shuffle filter at depth {}, recursing...", depth);
-            
             ShuffleBlockList nestedList = configured.getOrDefault(
                 ModDataComponents.SHUFFLE_BLOCK_LIST.get(),
                 ShuffleBlockList.EMPTY
@@ -882,7 +829,7 @@ public class MixinRollerMovementBehaviour {
             }
             
             // Handle nested shuffle filters recursively
-            if (configured.getItem() instanceof BaseShuffleFilterItem nestedFilterItem) {
+            if (configured.getItem() instanceof BaseShuffleFilterItem) {
                 ShuffleBlockList nestedList = configured.getOrDefault(
                     ModDataComponents.SHUFFLE_BLOCK_LIST.get(),
                     ShuffleBlockList.EMPTY
@@ -896,7 +843,7 @@ public class MixinRollerMovementBehaviour {
             }
             
             // Handle Create filters - extract first matching item
-            if (configured.getItem() instanceof FilterItem createFilter) {
+            if (configured.getItem() instanceof FilterItem) {
                 FilterItemStack filterStack = FilterItemStack.of(configured);
                 for (int slot = 0; slot < inv.getSlots(); slot++) {
                     ItemStack stackInSlot = inv.getStackInSlot(slot);
@@ -1051,7 +998,6 @@ public class MixinRollerMovementBehaviour {
         
         // Create filter - use its matching logic
         if (item instanceof FilterItem) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Extracting using Create filter matching");
             FilterItemStack filterStack = FilterItemStack.of(configuredStack);
             return com.simibubi.create.foundation.item.ItemHelper.extract(
                 inv,
@@ -1062,7 +1008,6 @@ public class MixinRollerMovementBehaviour {
         }
         
         // Concrete block item - direct extraction
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Extracting concrete block: {}", item);
         return com.simibubi.create.foundation.item.ItemHelper.extract(
             inv,
             stack -> stack.getItem() == item,

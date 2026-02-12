@@ -4,9 +4,8 @@ import com.agent772.createshufflefilter.component.ShuffleBlockList;
 import com.agent772.createshufflefilter.component.ShuffleMode;
 import com.agent772.createshufflefilter.menu.ShuffleFilterMenu;
 import com.agent772.createshufflefilter.network.FilterConfigPacket;
-import com.agent772.createshufflefilter.screen.widget.BlockSlotWidget;
+
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 
