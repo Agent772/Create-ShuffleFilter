@@ -30,6 +30,10 @@ base {
     archivesName = "create-shufflefilter"
 }
 
+tasks.named('jar', Jar) {
+    archiveClassifier = 'neo'
+}
+
 // Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
@@ -217,10 +221,10 @@ tasks.register('copyJarToTester', Copy) {
 }
 
 // Run the copy task after the main 'build' task completes
-tasks.named('build') {
-    // Use task name string for finalizedBy to stay configuration-cache friendly
-    finalizedBy 'copyJarToTester'
-}
+// tasks.named('build') {
+//     // Use task name string for finalizedBy to stay configuration-cache friendly
+//     finalizedBy 'copyJarToTester'
+// }
 
 // Helper function to get changelog from multiple sources (configuration-cache safe)
 def getChangelogProvider() {
@@ -263,8 +267,6 @@ curseforge {
     apiToken = providers.gradleProperty('curseforge_api_key')
     
     publications {
-        // The plugin auto-creates a 'neoForge' publication when ModDevGradle is detected
-        // We configure it here
         neoForge {
             projectId = project.findProperty('curseforge_project_id')
             
@@ -272,7 +274,7 @@ curseforge {
                 main {
                     from(tasks.jar)
                     
-                    displayName = "${mod_name} ${version}-neo"
+                    displayName = "create-shuffle-filter-${version}-neo"
                     releaseType = io.github.themrmilchmann.gradle.publish.curseforge.ReleaseType.RELEASE
                     
                     changelog {
@@ -298,7 +300,7 @@ modrinth {
     projectId = project.findProperty('modrinth_project_id')
     
     versionNumber = version
-    versionName = "${mod_name} ${version}-neo"
+    versionName = "create-shuffle-filter-${version}-neo"
     versionType = 'release' // 'alpha', 'beta', or 'release'
     
     uploadFile = tasks.jar
@@ -313,44 +315,17 @@ modrinth {
     }
 }
 
-// Safety confirmation task
-tasks.register('confirmRelease') {
-    group = 'upload'
-    description = 'Prompts for confirmation before releasing'
-    doLast {
-        // Skip confirmation if -Pconfirm=yes is passed
-        if (project.hasProperty('confirm') && project.property('confirm') == 'yes') {
-            println 'Confirmation bypassed via -Pconfirm=yes'
-            return
-        }
-        
-        def console = System.console()
-        if (console) {
-            def answer = console.readLine('\n⚠️  You are about to publish to production! Type "yes" to confirm: ')
-            if (answer?.toLowerCase() != 'yes') {
-                throw new GradleException('Release cancelled by user.')
-            }
-            println '✓ Release confirmed. Proceeding...'
-        } else {
-            // Running in non-interactive environment (e.g., IDE)
-            println '⚠️  WARNING: No console available for confirmation.'
-            println '   To bypass this check, run: gradlew release -Pconfirm=yes'
-            throw new GradleException('Cannot confirm release in non-interactive mode. Use -Pconfirm=yes to bypass.')
-        }
-    }
-}
-
 // Convenience tasks for publishing
 tasks.register('releaseCurseForge') {
     group = 'upload'
     description = 'Builds and uploads the jar to CurseForge'
-    dependsOn 'confirmRelease', 'publishNeoForgePublicationToCurseForge'
+    dependsOn 'publishNeoForgePublicationToCurseForge'
 }
 
 tasks.register('releaseModrinth') {
     group = 'upload'
     description = 'Builds and uploads the jar to Modrinth'
-    dependsOn 'confirmRelease', 'modrinth'
+    dependsOn 'modrinth'
 }
 
 tasks.register('release') {
