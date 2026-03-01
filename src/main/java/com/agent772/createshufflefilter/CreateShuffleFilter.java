@@ -30,7 +30,6 @@ public class CreateShuffleFilter {
     public static final ItemEntry<ShuffleFilterItem> SHUFFLE_FILTER = 
         REGISTRATE.item("shuffle_filter", ShuffleFilterItem::new)
             .properties(p -> p
-                .stacksTo(1)
                 .component(ModDataComponents.SHUFFLE_BLOCK_LIST.get(), ShuffleBlockList.EMPTY)
             )
             .lang("Shuffle Filter")
@@ -40,7 +39,6 @@ public class CreateShuffleFilter {
     public static final ItemEntry<WeightedShuffleFilterItem> WEIGHTED_SHUFFLE_FILTER = 
         REGISTRATE.item("weighted_shuffle_filter", WeightedShuffleFilterItem::new)
             .properties(p -> p
-                .stacksTo(1)
                 .component(ModDataComponents.SHUFFLE_BLOCK_LIST.get(), ShuffleBlockList.EMPTY)
             )
             .lang("Weighted Shuffle Filter")
