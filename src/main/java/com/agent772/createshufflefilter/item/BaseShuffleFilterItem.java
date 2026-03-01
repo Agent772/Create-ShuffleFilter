@@ -56,7 +56,27 @@ public abstract class BaseShuffleFilterItem extends FilterItem {
     public net.minecraft.core.component.DataComponentType<?> getComponentType() {
         return ModDataComponents.SHUFFLE_BLOCK_LIST.get();
     }
-    
+
+    /**
+     * A shuffle filter can be copied FROM only when it is actually configured.
+     * We must override the default because our component is always present (even empty),
+     * so item.has(getComponentType()) would incorrectly return true for blank filters.
+     */
+    @Override
+    public boolean canCopyFromItem(ItemStack item) {
+        ShuffleBlockList list = item.getOrDefault(ModDataComponents.SHUFFLE_BLOCK_LIST.get(), ShuffleBlockList.EMPTY);
+        return !list.isEmpty();
+    }
+
+    /**
+     * A shuffle filter can be copied TO only when it has no configuration yet.
+     */
+    @Override
+    public boolean canCopyToItem(ItemStack item) {
+        ShuffleBlockList list = item.getOrDefault(ModDataComponents.SHUFFLE_BLOCK_LIST.get(), ShuffleBlockList.EMPTY);
+        return list.isEmpty();
+    }
+
     /**
      * Creates the menu for configuring this filter.
      * Each filter type has its own menu implementation.
