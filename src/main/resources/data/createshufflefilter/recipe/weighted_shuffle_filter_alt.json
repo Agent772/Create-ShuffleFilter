@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CWI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_nugget"
+    },
+    "W": {
+      "tag": "minecraft:wool"
+    },
+    "C": {
+      "item": "create:copper_nugget"
+    }
+  },
+  "result": {
+    "id": "createshufflefilter:weighted_shuffle_filter",
+    "count": 1
+  }
+}
