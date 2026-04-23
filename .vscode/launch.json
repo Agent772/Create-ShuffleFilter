@@ -12,11 +12,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\clientRunProgramArgs.txt"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\clientRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\clientRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\clientRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Git\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -34,11 +34,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\dataRunProgramArgs.txt"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\dataRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\dataRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\dataRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Git\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -56,11 +56,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunProgramArgs.txt"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\gameTestServerRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Git\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},
@@ -78,11 +78,11 @@
       "projectName": "Create-ShuffleFilter",
       "mainClass": "net.neoforged.devlaunch.Main",
       "args": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\serverRunProgramArgs.txt"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\serverRunProgramArgs.txt"
       ],
       "vmArgs": [
-        "@D:\\Alex\\Documents\\Create-ShuffleFilter\\build\\moddev\\serverRunVmArgs.txt",
-        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Alex\\Documents\\Create-ShuffleFilter\\bin\\main"
+        "@D:\\Git\\Create-ShuffleFilter\\build\\moddev\\serverRunVmArgs.txt",
+        "-Dfml.modFolders\u003dcreateshufflefilter%%D:\\Git\\Create-ShuffleFilter\\bin\\main"
       ],
       "cwd": "${workspaceFolder}\\run",
       "env": {},

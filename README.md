@@ -7,9 +7,9 @@
 
 <p align="center">
 	<img src="https://img.shields.io/badge/Minecraft-1.21.1-brightgreen?logo=minecraft" alt="Minecraft" />
-	<img src="https://img.shields.io/badge/Create-6.0.6--98-blue" alt="Create" />
+	<img src="https://img.shields.io/badge/Create-6.0.8-blue" alt="Create" />
 	<img src="https://img.shields.io/badge/NeoForged-21.1.209-663399" alt="NeoForged" />
-	<img src="https://img.shields.io/badge/mod%20version-1.0.0-blue" alt="Mod version" />
+	<img src="https://img.shields.io/badge/mod%20version-2.0.2-blue" alt="Mod version" />
 	<img src="https://img.shields.io/badge/license-MIT-green" alt="License" />
 	<img src="https://img.shields.io/badge/Java-17%2B-orange?logo=java" alt="Java" />
 </p>
