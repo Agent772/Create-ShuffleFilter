@@ -608,9 +608,12 @@ public class MixinRollerMovementBehaviour {
         ShuffleBlockList filteredList = new ShuffleBlockList(availableBlocks);
         
         // Create deterministic Random from position
-        // BlockPos.asLong() converts X/Y/Z to unique long value
-        // This ensures same position always gives same block
+        // Apply Stafford variant 13 bit-mixing to pos.asLong() so adjacent positions
+        // produce uncorrelated seeds (fixes visible patterns along straight lines)
         long seed = pos.asLong();
+        seed = (seed ^ (seed >>> 30)) * 0xbf58476d1ce4e5b9L;
+        seed = (seed ^ (seed >>> 27)) * 0x94d049bb133111ebL;
+        seed = seed ^ (seed >>> 31);
         Random posRandom = new Random(seed);
         
         // Select entry using position-based random
