@@ -1,246 +1,180 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    id 'net.neoforged.moddev' version '2.0.110'
-    id 'io.github.themrmilchmann.curseforge-publish' version '0.8.0'
-    id 'com.modrinth.minotaur' version '2.+'
     id 'idea'
-}
-
-tasks.named('wrapper', Wrapper).configure {
-    // Define wrapper values here so as to not have to always do so when updating gradlew.properties.
-    // Switching this to Wrapper.DistributionType.ALL will download the full gradle sources that comes with
-    // documentation attached on cursor hover of gradle classes and methods. However, this comes with increased
-    // file size for Gradle. If you do switch this to ALL, run the Gradle wrapper task twice afterwards.
-    // (Verify by checking gradle/wrapper/gradle-wrapper.properties to see if distributionUrl now points to `-all`)
-    distributionType = Wrapper.DistributionType.BIN
+    id 'net.neoforged.moddev.legacyforge' version '2.0.107'
+    id 'net.darkhax.curseforgegradle' version '1.1.15'
+    id 'com.modrinth.minotaur' version '2.+'
 }
 
 version = mod_version
 group = mod_group_id
-
-repositories {
-    // Add here additional repositories if required by some of the dependencies below.
-    maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
-    maven { url = "https://maven.ithundxr.dev/snapshots" } // Registrate
-    maven { url = "https://maven.blamejared.com" } // JEI
-}
 
 base {
     archivesName = "create-shufflefilter"
 }
 
 tasks.named('jar', Jar) {
-    archiveClassifier = 'neo'
+    archiveClassifier = 'forge'
 }
 
-// Mojang ships Java 21 to end users in 1.21.1, so mods should target Java 21.
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+// Mojang ships Java 17 to end users in 1.20.1, so mods should target Java 17.
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-neoForge {
-    // Specify the version of NeoForge to use.
-    version = project.neo_version
+idea {
+    module {
+        downloadJavadoc = true
+        downloadSources = true
+    }
+}
+
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
 
     parchment {
-        mappingsVersion = project.parchment_mappings_version
-        minecraftVersion = project.parchment_minecraft_version
-    }
-
-    // This line is optional. Access Transformers are automatically detected
-    // accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
-
-    // Default run configurations.
-    // These can be tweaked, removed, or duplicated as needed.
-    runs {
-        client {
-            client()
-
-            // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        }
-
-        server {
-            server()
-            programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        }
-
-        // This run config launches GameTestServer and runs all registered gametests, then exits.
-        // By default, the server will crash when no gametests are provided.
-        // The gametest system is also enabled by default for other run configs under the /test command.
-        gameTestServer {
-            type = "gameTestServer"
-            systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
-        }
-
-        data {
-            data()
-
-            // example of overriding the workingDirectory set in configureEach above, uncomment if you want to use it
-            // gameDirectory = project.file('run-data')
-
-            // Specify the modid for data generation, where to output the resulting resource, and where to look for existing resources.
-            programArguments.addAll '--mod', project.mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
-        }
-
-        // applies to all the run configs above
-        configureEach {
-            // Recommended logging data for a userdev environment
-            // The markers can be added/remove as needed separated by commas.
-            // "SCAN": For mods scan.
-            // "REGISTRIES": For firing of registry events.
-            // "REGISTRYDUMP": For getting the contents of all registries.
-            systemProperty 'forge.logging.markers', 'REGISTRIES'
-
-            // Recommended logging level for the console
-            // You can set various levels here.
-            // Please read: https://stackoverflow.com/questions/2031163/when-to-use-the-different-log-levels
-            logLevel = org.slf4j.event.Level.DEBUG
-        }
+        minecraftVersion = parchment_minecraft_version
+        mappingsVersion = parchment_mappings_version
     }
 
     mods {
-        // define mod <-> source bindings
-        // these are used to tell the game which sources are for which mod
-        // multi mod projects should define one per mod
         "${mod_id}" {
             sourceSet(sourceSets.main)
         }
     }
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file("run")
+
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+            systemProperty 'mixin.debug.verbose', 'true'
+            systemProperty 'mixin.checks.interfaces', 'false'
+            programArguments.addAll '--mixin.config', 'createshufflefilter.mixins.json'
+        }
+
+        server {
+            server()
+            gameDirectory = project.file("run/server")
+
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+            systemProperty 'mixin.env.remapRefMap', 'true'
+            systemProperty 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+            programArguments.addAll '--mixin.config', 'createshufflefilter.mixins.json'
+        }
+
+        data {
+            data()
+            gameDirectory = project.file("run")
+
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+
+            programArguments.addAll '--mod', mod_id, '--all', '--output', file('src/generated/resources/').getAbsolutePath(), '--existing', file('src/main/resources/').getAbsolutePath()
+        }
+    }
 }
 
-// Include resources generated by data generators.
-sourceSets.main.resources { srcDir 'src/generated/resources' }
+repositories {
+    maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
+    maven { url = "https://maven.ithundxr.dev/mirror" } // Registrate
+    mavenCentral()
+}
 
 // Sets up a dependency configuration called 'localRuntime'.
-// This configuration should be used instead of 'runtimeOnly' to declare
-// a dependency that will be present for runtime testing but that is
-// "optional", meaning it will not be pulled by dependents of this mod.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
 dependencies {
-    // Create mod dependencies
-    implementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
-    implementation("net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}")
-    compileOnly("dev.engine-room.flywheel:flywheel-neoforge-api-${minecraft_version}:${flywheel_version}")
-    runtimeOnly("dev.engine-room.flywheel:flywheel-neoforge-${minecraft_version}:${flywheel_version}")
-    implementation("com.tterrag.registrate:Registrate:${registrate_version}")
+    // Use jarJar like Create does to properly bundle dependencies
+    modImplementation(jarJar("com.tterrag.registrate:Registrate:${registrate_version}"))
 
-    // JEI integration for drag and drop support
-    // The JEI API is declared for compile time use, while the full JEI artifact is used at runtime
-    compileOnly "mezz.jei:jei-${jei_mc_version}-common-api:${jei_version}"
-    compileOnly "mezz.jei:jei-${jei_mc_version}-neoforge-api:${jei_version}"
-    // We add the full version to localRuntime, not runtimeOnly, so that we do not publish a dependency on it
-    localRuntime "mezz.jei:jei-${jei_mc_version}-neoforge:${jei_version}"
+    modCompileOnly("dev.engine-room.flywheel:flywheel-forge-api-${minecraft_version}:${flywheel_version}")
+    modRuntimeOnly(jarJar("dev.engine-room.flywheel:flywheel-forge-${minecraft_version}:${flywheel_version}") {
+        version {
+            strictly "[1.0,2.0)"
+            prefer flywheel_version
+        }
+    })
 
-    // Example mod dependency using a mod jar from ./libs with a flat dir repository
-    // This maps to ./libs/coolmod-${mc_version}-${coolmod_version}.jar
-    // The group id is ignored when searching -- in this case, it is "blank"
-    // implementation "blank:coolmod-${mc_version}:${coolmod_version}"
+    // Use jarJar for Ponder like Create does - this properly handles the production JAR
+    jarJar(modImplementation("net.createmod.ponder:Ponder-Forge-${minecraft_version}:${ponder_version}"))
 
-    // Example mod dependency using a file as dependency
-    // implementation files("libs/coolmod-${mc_version}-${coolmod_version}.jar")
+    modImplementation("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
 
-    // Example project dependency using a sister or child project:
-    // implementation project(":myproject")
+    implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.4.1"))
+    compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
 
-    // For more info:
-    // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html
-    // http://www.gradle.org/docs/current/userguide/dependency_management.html
+    // Prevent the Mixin annotation processor from being registered in IntelliJ's
+    // annotation processor settings when "Build and run using" is set to IntelliJ.
+    if (!Boolean.getBoolean("idea.sync.active")) {
+        annotationProcessor "org.spongepowered:mixin:0.8.5:processor"
+    }
 }
 
-// This block of code expands all declared replace properties in the specified resource targets.
-// A missing property will result in an error. Properties are expanded using ${} Groovy notation.
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+sourceSets.main {
+    resources {
+        srcDir("src/main/templates")
+        srcDir("src/generated/resources")
+        exclude(".cache/")
+    }
+}
+
+processResources {
     var replaceProperties = [
-            minecraft_version      : minecraft_version,
-            minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            loader_version_range   : loader_version_range,
-            create_version         : create_version,
-            create_version_range   : create_version_range,
-            mod_id                 : mod_id,
-            mod_name               : mod_name,
-            mod_license            : mod_license,
-            mod_version            : mod_version,
-            mod_authors            : mod_authors,
-            mod_description        : mod_description
+        mod_id                 : mod_id,
+        mod_name               : mod_name,
+        mod_version            : mod_version,
+        mod_authors            : mod_authors,
+        mod_description        : mod_description,
+        mod_license            : mod_license,
+        loader_version_range   : loader_version_range,
+        minecraft_version_range: minecraft_version_range,
+        create_version_range   : create_version_range,
+        forge_version_range    : forge_version_range
     ]
-    inputs.properties replaceProperties
-    expand replaceProperties
-    from "src/main/templates"
-    into "build/generated/sources/modMetadata"
-}
-// Include the output of "generateModMetadata" as an input directory for the build
-// this works with both building through Gradle and the IDE.
-sourceSets.main.resources.srcDir generateModMetadata
-// To avoid having to run "generateModMetadata" manually, make it run on every project reload
-neoForge.ideSyncTask generateModMetadata
 
-// Example configuration to allow publishing using the maven-publish plugin
-publishing {
-    publications {
-        register('mavenJava', MavenPublication) {
-            from components.java
-        }
+    // Replaces FML's magic file.jarVersion string with the correct version at build time.
+    replaceProperties.put("file", [jarVersion: project.version])
+
+    inputs.properties replaceProperties
+
+    filesMatching(["META-INF/mods.toml"]) {
+        expand(replaceProperties)
     }
-    repositories {
-        maven {
-            url "file://${project.projectDir}/repo"
-        }
+}
+
+jar {
+    String name = base.archivesName.get()
+
+    from("LICENSE") {
+        rename { "${it}_${name}" }
     }
+
+    manifest.attributes([
+            "MixinConfigs": "createshufflefilter.mixins.json"
+    ])
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+    options.encoding = 'UTF-8'
 }
-
-// IDEA no longer automatically downloads sources/javadoc jars for dependencies, so we need to explicitly enable the behavior.
-idea {
-    module {
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-// Task: copy the produced jar(s) to the user's CurseForge instance mods folder after a build
-// Adjust the destination path below if your CurseForge instance path changes.
-tasks.register('copyJarToTester', Copy) {
-    // Ensure the jar is built first (use task name string to avoid capturing task objects)
-    dependsOn 'jar'
-
-    // Copy only jars that start with the mod id (safer than copying everything)
-    from("$buildDir/libs") {
-        include "${mod_id}*.jar"
-    }
-
-    // Destination - use forward slashes to avoid escaping backslashes
-    into file('C:/Users/agent/curseforge/minecraft/Instances/TESTER (1)/mods')
-}
-
-// Run the copy task after the main 'build' task completes
-// tasks.named('build') {
-//     // Use task name string for finalizedBy to stay configuration-cache friendly
-//     finalizedBy 'copyJarToTester'
-// }
 
 // Helper function to get changelog from multiple sources (configuration-cache safe)
 def getChangelogProvider() {
     return providers.provider {
-        // 1. Check for -Pchangelog property
         if (project.hasProperty('changelog')) {
             return project.property('changelog')
         }
-        
-        // 2. Check for CHANGELOG.md file
+
         def changelogFile = file('CHANGELOG.md')
         if (changelogFile.exists()) {
             return changelogFile.text
         }
-        
-        // 3. Try to get latest git commit message
+
         try {
             def stdout = new ByteArrayOutputStream()
             exec {
@@ -255,63 +189,60 @@ def getChangelogProvider() {
         } catch (Exception e) {
             // Git not available or not a git repo
         }
-        
-        // 4. Fallback to simple version string
+
         return "Release ${version}"
     }
 }
 
 // CurseForge Publishing Configuration
-curseforge {
-    // API token from user gradle.properties
-    apiToken = providers.gradleProperty('curseforge_api_key')
-    
-    publications {
-        neoForge {
-            projectId = project.findProperty('curseforge_project_id')
-            
-            artifacts {
-                main {
-                    from(tasks.jar)
-                    
-                    displayName = "create-shuffle-filter-${version}-neo"
-                    releaseType = io.github.themrmilchmann.gradle.publish.curseforge.ReleaseType.RELEASE
-                    
-                    changelog {
-                        format = io.github.themrmilchmann.gradle.publish.curseforge.ChangelogFormat.MARKDOWN
-                        content = getChangelogProvider()
-                    }
-                    
-                    // clientRequired = true
-                    // serverRequired = true
-                    
-                    relations {
-                        requiredDependency(project.findProperty('curseforge_create_mod_slug') ?: 'create')
-                    }
-                }
-            }
-        }
-    }
+tasks.register('publishCurseForge', net.darkhax.curseforgegradle.TaskPublishCurseForge) {
+    apiToken = findProperty('curseforge_api_key')
+
+    def projectId = findProperty('curseforge_project_id')
+    def mainFile = upload(projectId, tasks.jar)
+
+    mainFile.displayName = "${mod_name} ${version}-forge"
+    mainFile.releaseType = 'release'
+    mainFile.changelog = getChangelogProvider()
+    mainFile.changelogType = 'markdown'
+
+    mainFile.addGameVersion(minecraft_version)
+    mainFile.addModLoader('Forge')
+
+    mainFile.addRequirement(findProperty('curseforge_create_mod_slug') ?: 'create')
 }
 
 // Modrinth Publishing Configuration
 modrinth {
     token = providers.gradleProperty('modrinth_token')
     projectId = project.findProperty('modrinth_project_id')
-    
+
     versionNumber = version
-    versionName = "create-shuffle-filter-${version}-neo"
-    versionType = 'release' // 'alpha', 'beta', or 'release'
-    
+    versionName = "${mod_name} ${version}-forge"
+    versionType = 'release'
+
     uploadFile = tasks.jar
-    
+
     gameVersions = [minecraft_version]
-    loaders = ['neoforge']
-    
+    loaders = ['forge']
+
     changelog = getChangelogProvider()
-    
+
     dependencies {
         required.project 'create'
+    }
+}
+
+publishing {
+    publications {
+        register('mavenJava', MavenPublication) {
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            url "file://${project.projectDir}/repo"
+        }
     }
 }
 
@@ -319,7 +250,7 @@ modrinth {
 tasks.register('releaseCurseForge') {
     group = 'upload'
     description = 'Builds and uploads the jar to CurseForge'
-    dependsOn 'publishNeoForgePublicationToCurseForge'
+    dependsOn 'publishCurseForge'
 }
 
 tasks.register('releaseModrinth') {

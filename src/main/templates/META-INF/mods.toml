@@ -1,5 +1,5 @@
-modLoader="javafml" 
-loaderVersion="${loader_version_range}" 
+modLoader="javafml"
+loaderVersion="${loader_version_range}"
 license="${mod_license}"
 
 # A URL to refer people to when problems occur with this mod
@@ -12,7 +12,7 @@ version="${mod_version}"
 displayName="${mod_name}"
 displayURL="https://github.com/Agent772/Create-ShuffleFilter"
 logoFile="shufflefilters_logo.png"
-credits="Creators of Create, NeoForge, Copilot, and all other awesome tools that made this possible." #optional
+credits="Creators of Create, Forge, Copilot, and all other awesome tools that made this possible." #optional
 authors="${mod_authors}" #optional
 
 # The description text for the mod (multi line!) (#mandatory)
@@ -23,24 +23,22 @@ config="${mod_id}.mixins.json"
 
 
 [[dependencies.${mod_id}]] #optional
-    modId="neoforge" 
-    type="required" 
-    versionRange="[${neo_version},)" 
+    modId="forge"
+    mandatory=true
+    versionRange="${forge_version_range}"
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="minecraft"
-    type="required"
+    mandatory=true
     versionRange="${minecraft_version_range}"
     ordering="NONE"
     side="BOTH"
 
 [[dependencies.${mod_id}]]
     modId="create"
-    type="required"
+    mandatory=true
     versionRange="${create_version_range}"
     ordering="AFTER"
     side="BOTH"
-
-
