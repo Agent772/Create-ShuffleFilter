@@ -3,8 +3,6 @@
   "ingredient": {
     "item": "createshufflefilter:shuffle_filter"
   },
-  "result": {
-    "id":"createshufflefilter:weighted_shuffle_filter",
-    "count": 1
-  }
+  "result": "createshufflefilter:weighted_shuffle_filter",
+  "count": 1
 }

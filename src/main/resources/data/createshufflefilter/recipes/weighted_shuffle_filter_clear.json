@@ -7,7 +7,7 @@
     }
   ],
   "result": {
-    "id": "createshufflefilter:weighted_shuffle_filter",
+    "item": "createshufflefilter:weighted_shuffle_filter",
     "count": 1
   }
 }
