@@ -423,7 +423,18 @@ public class MixinRollerMovementBehaviour {
             BlockPos pos,
             Level world,
             IItemHandler inv) {
-        return selectBlockForPositionWithDepth(blockList, useWeighted, pos, world, inv, 0);
+        // Build the position-seeded Random once at the top level and thread it through the
+        // recursion. Re-creating `new Random(seed)` at each cascade level (the original
+        // pattern) made the outer and inner draws share the same state₁ bits — outer's
+        // `nextFloat()` and inner's `nextInt(small_n)` both read the high bits of the same
+        // advanced state, so the inner pick was deterministically tied to which range of
+        // [0, totalWeight) the outer pick landed in. Threading the same Random instance
+        // makes every recursive draw consume fresh state and be statistically independent.
+        long seed = pos.asLong();
+        seed = (seed ^ (seed >>> 30)) * 0xbf58476d1ce4e5b9L;
+        seed = (seed ^ (seed >>> 27)) * 0x94d049bb133111ebL;
+        seed = seed ^ (seed >>> 31);
+        return selectBlockForPositionWithDepth(blockList, useWeighted, pos, world, inv, 0, new Random(seed));
     }
 
     @Unique
@@ -433,7 +444,8 @@ public class MixinRollerMovementBehaviour {
             BlockPos pos,
             Level world,
             IItemHandler inv,
-            int depth) {
+            int depth,
+            Random posRandom) {
 
         if (depth >= ShuffleFilterUtil.MAX_CASCADE_DEPTH) {
             return ItemStack.EMPTY;
@@ -445,13 +457,6 @@ public class MixinRollerMovementBehaviour {
         }
 
         ShuffleBlockList filteredList = new ShuffleBlockList(availableBlocks);
-
-        // Stafford variant 13 bit-mixing so adjacent positions produce uncorrelated seeds.
-        long seed = pos.asLong();
-        seed = (seed ^ (seed >>> 30)) * 0xbf58476d1ce4e5b9L;
-        seed = (seed ^ (seed >>> 27)) * 0x94d049bb133111ebL;
-        seed = seed ^ (seed >>> 31);
-        Random posRandom = new Random(seed);
 
         ShuffleBlockList.BlockEntry selectedEntry;
         if (useWeighted) {
@@ -505,7 +510,7 @@ public class MixinRollerMovementBehaviour {
                 return ItemStack.EMPTY;
             }
             boolean nestedWeighted = item instanceof WeightedShuffleFilterItem;
-            return selectBlockForPositionWithDepth(nestedList, nestedWeighted, pos, world, inv, depth + 1);
+            return selectBlockForPositionWithDepth(nestedList, nestedWeighted, pos, world, inv, depth + 1, posRandom);
         }
 
         return configured;
