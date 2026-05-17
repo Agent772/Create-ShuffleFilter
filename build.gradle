@@ -80,6 +80,7 @@ legacyForge {
 repositories {
     maven { url = "https://maven.createmod.net" } // Create, Ponder, Flywheel
     maven { url = "https://maven.ithundxr.dev/mirror" } // Registrate
+    maven { url = "https://maven.blamejared.com" } // JEI
     mavenCentral()
 }
 
@@ -107,6 +108,12 @@ dependencies {
 
     implementation(jarJar("io.github.llamalad7:mixinextras-forge:0.4.1"))
     compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:0.4.1"))
+
+    // JEI integration for drag and drop support (Forge 1.20.1 / 15.x line)
+    // The JEI API is declared compileOnly; the full artifact runs via localRuntime so we do not publish a dependency on it.
+    compileOnly "mezz.jei:jei-${jei_mc_version}-common-api:${jei_version}"
+    compileOnly "mezz.jei:jei-${jei_mc_version}-forge-api:${jei_version}"
+    localRuntime "mezz.jei:jei-${jei_mc_version}-forge:${jei_version}"
 
     // Prevent the Mixin annotation processor from being registered in IntelliJ's
     // annotation processor settings when "Build and run using" is set to IntelliJ.
