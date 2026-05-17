@@ -4,8 +4,17 @@
   "package": "com.agent772.createshufflefilter.mixins",
   "compatibilityLevel": "JAVA_17",
   "refmap": "mixins.createshufflefilter.refmap.json",
-  "mixins": [],
-  "client": [],
+  "mixins": [
+    "BlockEntityBehaviourAccessor",
+    "MixinFilteringBehaviour",
+    "MixinDeployerMovementBehaviour",
+    "MixinRollerBlockEntity",
+    "MixinRollerMovementBehaviour",
+    "MixinRollerFallingBlock"
+  ],
+  "client": [
+    "MixinFilterScreen"
+  ],
   "server": [],
   "injectors": {
     "defaultRequire": 1
