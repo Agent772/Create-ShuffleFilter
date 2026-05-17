@@ -230,7 +230,7 @@ public class WeightedShuffleFilterScreen extends BaseShuffleFilterScreen<Weighte
                 if (!hasBlock) {
                     row1WeightFields.get(index).setWeight(0);
                 } else if (row1WeightFields.get(index).getWeight() == 0) {
-                    row1WeightFields.get(index).setWeight(0);
+                    row1WeightFields.get(index).setWeight(1);
                 }
             }
         } else {

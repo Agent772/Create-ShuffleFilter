@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Ghost ingredient handler for WeightedShuffleFilterScreen (9 slots)
+ * Ghost ingredient handler for WeightedShuffleFilterScreen (18 slots)
  * Allows drag and drop from JEI into filter slots
  */
 public class WeightedShuffleFilterGhostHandler implements IGhostIngredientHandler<WeightedShuffleFilterScreen> {
@@ -26,7 +26,7 @@ public class WeightedShuffleFilterGhostHandler implements IGhostIngredientHandle
             return targets;
         }
 
-        // Get all slot widgets from row 1 (weighted filter only has 9 slots)
+        // Get all slot widgets (weighted filter has 18 slots across 2 rows of 9)
         List<BlockSlotWidget> allSlots = screen.getAllSlots();
 
         // Create ghost targets for each slot
