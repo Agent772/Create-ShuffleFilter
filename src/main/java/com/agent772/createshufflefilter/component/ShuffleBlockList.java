@@ -27,6 +27,7 @@ import java.util.Objects;
  */
 public final class ShuffleBlockList {
 
+    // 2×9 GUI slot grid in the shuffle filter screen.
     public static final int MAX_ENTRIES = 18;
     public static final ShuffleBlockList EMPTY = new ShuffleBlockList(List.of());
 
@@ -91,8 +92,7 @@ public final class ShuffleBlockList {
         if (itemId == null) {
             return this;
         }
-        CompoundTag capturedTag = stack.getTag() == null ? null : stack.getTag().copy();
-        next.add(new BlockEntry(itemId, weight, capturedTag));
+        next.add(new BlockEntry(itemId, weight, stack.getTag()));
         return new ShuffleBlockList(next);
     }
 
@@ -123,16 +123,28 @@ public final class ShuffleBlockList {
         for (BlockEntry entry : blocks) {
             total += entry.weight;
         }
-        if (total == 0.0f) {
-            total = 1.0f;
-        }
         List<BlockEntry> next = new ArrayList<>(blocks.size());
-        for (BlockEntry entry : blocks) {
-            next.add(new BlockEntry(entry.itemId, entry.weight / total, entry.itemTag));
+        if (total == 0.0f) {
+            float equal = 1.0f / blocks.size();
+            for (BlockEntry entry : blocks) {
+                next.add(new BlockEntry(entry.itemId, equal, entry.itemTag));
+            }
+        } else {
+            for (BlockEntry entry : blocks) {
+                next.add(new BlockEntry(entry.itemId, entry.weight / total, entry.itemTag));
+            }
         }
         return new ShuffleBlockList(next);
     }
 
+    /**
+     * Select a block by weighted probability.
+     *
+     * <p>{@code random} must lie in {@code [0, totalWeight)} where {@code totalWeight}
+     * is the sum of this list's weights. Callers passing a {@code [0, 1)} value (e.g.
+     * {@link java.util.Random#nextFloat()}) should call {@link #normalized()} first or
+     * the distribution will be biased toward early entries.
+     */
     @Nullable
     public Block selectWeighted(float random) {
         if (blocks.isEmpty()) {
@@ -156,6 +168,11 @@ public final class ShuffleBlockList {
         return blocks.get(Math.floorMod(index, blocks.size())).getBlock();
     }
 
+    /**
+     * Select an item by weighted probability. See {@link #selectWeighted(float)} for the
+     * input range contract — call {@link #normalized()} first if {@code random} is in
+     * {@code [0, 1)}.
+     */
     @Nullable
     public Item selectItemWeighted(float random) {
         if (blocks.isEmpty()) {
@@ -197,16 +214,13 @@ public final class ShuffleBlockList {
             if (itemId == null) {
                 continue;
             }
-            float weight = entryTag.contains(KEY_WEIGHT, Tag.TAG_FLOAT)
+            float rawWeight = entryTag.contains(KEY_WEIGHT, Tag.TAG_FLOAT)
                 ? entryTag.getFloat(KEY_WEIGHT)
                 : 1.0f;
-            CompoundTag itemTag = null;
-            if (entryTag.contains(KEY_ITEM_TAG, Tag.TAG_COMPOUND)) {
-                CompoundTag candidate = entryTag.getCompound(KEY_ITEM_TAG);
-                if (!candidate.isEmpty()) {
-                    itemTag = candidate.copy();
-                }
-            }
+            float weight = Float.isFinite(rawWeight) ? Math.max(0.0f, rawWeight) : 0.0f;
+            CompoundTag itemTag = entryTag.contains(KEY_ITEM_TAG, Tag.TAG_COMPOUND)
+                ? entryTag.getCompound(KEY_ITEM_TAG)
+                : null;
             entries.add(new BlockEntry(itemId, weight, itemTag));
         }
         return entries.isEmpty() ? EMPTY : new ShuffleBlockList(entries);
@@ -228,7 +242,7 @@ public final class ShuffleBlockList {
         tag.put(KEY_BLOCKS, listTag);
     }
 
-    public static ShuffleBlockList getOrCreate(ItemStack stack) {
+    public static ShuffleBlockList read(ItemStack stack) {
         CompoundTag root = stack.getTag();
         if (root == null || !root.contains(ROOT_KEY, Tag.TAG_COMPOUND)) {
             return EMPTY;
@@ -301,7 +315,9 @@ public final class ShuffleBlockList {
         public BlockEntry(ResourceLocation itemId, float weight, @Nullable CompoundTag itemTag) {
             this.itemId = Objects.requireNonNull(itemId, "itemId");
             this.weight = weight;
-            this.itemTag = itemTag;
+            // Defensive copy so direct constructor callers can't mutate the entry's
+            // stored payload from the outside.
+            this.itemTag = (itemTag == null || itemTag.isEmpty()) ? null : itemTag.copy();
         }
 
         public BlockEntry(ResourceLocation itemId, float weight) {
