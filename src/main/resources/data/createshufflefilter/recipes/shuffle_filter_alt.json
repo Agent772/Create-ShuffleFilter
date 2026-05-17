@@ -2,21 +2,21 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "pattern": [
-    "CWI"
+    "BWI"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:iron_nugget"
+    "B": {
+      "item": "create:brass_nugget"
     },
     "W": {
       "tag": "minecraft:wool"
     },
-    "C": {
-      "item": "create:copper_nugget"
+    "I": {
+      "item": "minecraft:iron_nugget"
     }
   },
   "result": {
-    "id": "createshufflefilter:weighted_shuffle_filter",
+    "item": "createshufflefilter:shuffle_filter",
     "count": 1
   }
 }
