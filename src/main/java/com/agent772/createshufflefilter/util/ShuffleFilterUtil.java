@@ -119,11 +119,23 @@ public class ShuffleFilterUtil {
         if (blockList.isEmpty()) return null;
 
         if (useWeighted) {
-            float random = world.getRandom().nextFloat();
+            // Scale the draw by the actual sum of weights instead of assuming the list is
+            // normalized to 1.0. Filtered sub-lists (e.g. only entries available in the
+            // contraption inventory) won't sum to 1.0 and would otherwise dump the
+            // residual probability mass into the last entry.
+            float totalWeight = 0.0f;
+            for (ShuffleBlockList.BlockEntry entry : blockList.blocks()) {
+                totalWeight += entry.weight();
+            }
+            if (totalWeight <= 0.0f) {
+                int index = world.getRandom().nextInt(blockList.size());
+                return blockList.blocks().get(index);
+            }
+            float random = world.getRandom().nextFloat() * totalWeight;
             float accumulated = 0.0f;
             for (ShuffleBlockList.BlockEntry entry : blockList.blocks()) {
                 accumulated += entry.weight();
-                if (random <= accumulated) {
+                if (random < accumulated) {
                     return entry;
                 }
             }
