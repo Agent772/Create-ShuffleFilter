@@ -455,20 +455,33 @@ public class MixinRollerMovementBehaviour {
 
         ShuffleBlockList.BlockEntry selectedEntry;
         if (useWeighted) {
-            float random = posRandom.nextFloat();
-            float accumulated = 0.0f;
-
-            selectedEntry = null;
+            // Compute the sum of weights across the *filtered* list. The configured weights
+            // are normalized to 1.0 when all blocks are present, but `availableBlocks` may
+            // drop entries whose item isn't in the contraption inventory — in that case the
+            // sum is less than 1.0, and a naïve `nextFloat()` draw leaks the residual
+            // probability mass into the last entry. Multiply the draw by `totalWeight` so
+            // the remaining entries keep their relative proportions.
+            float totalWeight = 0.0f;
             for (ShuffleBlockList.BlockEntry entry : filteredList.blocks()) {
-                accumulated += entry.weight();
-                if (random <= accumulated) {
-                    selectedEntry = entry;
-                    break;
-                }
+                totalWeight += entry.weight();
             }
 
-            if (selectedEntry == null && !filteredList.isEmpty()) {
-                selectedEntry = filteredList.blocks().get(filteredList.size() - 1);
+            selectedEntry = null;
+            if (totalWeight <= 0.0f) {
+                selectedEntry = filteredList.blocks().get(posRandom.nextInt(filteredList.size()));
+            } else {
+                float random = posRandom.nextFloat() * totalWeight;
+                float accumulated = 0.0f;
+                for (ShuffleBlockList.BlockEntry entry : filteredList.blocks()) {
+                    accumulated += entry.weight();
+                    if (random < accumulated) {
+                        selectedEntry = entry;
+                        break;
+                    }
+                }
+                if (selectedEntry == null) {
+                    selectedEntry = filteredList.blocks().get(filteredList.size() - 1);
+                }
             }
         } else {
             int index = posRandom.nextInt(filteredList.size());
