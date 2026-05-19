@@ -205,6 +205,9 @@ def getChangelogProvider() {
 tasks.register('publishCurseForge', net.darkhax.curseforgegradle.TaskPublishCurseForge) {
     apiToken = findProperty('curseforge_api_key')
 
+    // Dry-run gate: -Pcurseforge.debug=true logs the request payload and skips the HTTP call.
+    debugMode = providers.gradleProperty('curseforge.debug').map { Boolean.parseBoolean(it) }.getOrElse(false)
+
     def projectId = findProperty('curseforge_project_id')
     def mainFile = upload(projectId, tasks.jar)
 
@@ -232,6 +235,9 @@ modrinth {
 
     gameVersions = [minecraft_version]
     loaders = ['forge']
+
+    // Dry-run gate: -Pmodrinth.debug=true logs the payload and skips the upload.
+    debugMode = providers.gradleProperty('modrinth.debug').map { Boolean.parseBoolean(it) }.getOrElse(false)
 
     changelog = getChangelogProvider()
 
