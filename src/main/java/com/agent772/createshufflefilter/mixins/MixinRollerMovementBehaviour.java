@@ -51,6 +51,32 @@ import net.minecraft.world.level.block.state.properties.SlabType;
 public class MixinRollerMovementBehaviour {
 
     /**
+     * Cached {@code RollerMovementBehaviour.PaveResult} enum values. The class is private,
+     * so we resolve it once via reflection at class-load and reuse the array everywhere
+     * we need to return PASS/SUCCESS. Order: FAIL=0, PASS=1, SUCCESS=2.
+     */
+    @Unique
+    private static final Enum<?>[] createshufflefilter$PAVE_RESULT_VALUES = createshufflefilter$resolvePaveResultValues();
+
+    @Unique
+    private static Enum<?>[] createshufflefilter$resolvePaveResultValues() {
+        try {
+            Class<?> paveResultClass = Class.forName("com.simibubi.create.content.contraptions.actors.roller.RollerMovementBehaviour$PaveResult");
+            Object raw = paveResultClass.getMethod("values").invoke(null);
+            return (Enum<?>[]) raw;
+        } catch (Exception e) {
+            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.error(
+                "Failed to resolve RollerMovementBehaviour$PaveResult - skip and place results will be no-ops", e);
+            return null;
+        }
+    }
+
+    @Unique
+    private static Enum<?> createshufflefilter$paveResult(int index) {
+        return createshufflefilter$PAVE_RESULT_VALUES != null ? createshufflefilter$PAVE_RESULT_VALUES[index] : null;
+    }
+
+    /**
      * Shadow method to access the target class's getStateToPaveWith
      */
     @Shadow
@@ -72,13 +98,21 @@ public class MixinRollerMovementBehaviour {
      */
     @Unique
     private ItemStack createshufflefilter$lastSelectedBlock = ItemStack.EMPTY;
-    
+
     /**
      * Tracks whether getStateToPaveWithAsSlab found a valid slab
      * Used to determine if we should skip placement when slab is needed but unavailable
      */
     @Unique
     private boolean createshufflefilter$slabAvailable = false;
+
+    /**
+     * True when the most recent {@code getStateToPaveWith} call resolved to the Skip
+     * marker — the position should be paved with nothing and not break the existing
+     * ground block. Reset on every selection.
+     */
+    @Unique
+    private boolean createshufflefilter$intentionalSkip = false;
 
     /**
      * Intercepts roller's block placement logic to support shuffle filters
@@ -134,20 +168,31 @@ public class MixinRollerMovementBehaviour {
 
         // Get current position from context for deterministic selection
         BlockPos currentPos = BlockPos.containing(context.position);
-        
-        // Reset slab availability flag for new selection
+
+        // Reset per-selection flags
         createshufflefilter$slabAvailable = false;
-        
+        createshufflefilter$intentionalSkip = false;
+
         // Select block type with position-based determinism (same position = same block)
         // This checks availability but does NOT extract
-        ItemStack selected = selectBlockForPosition(
-            blockList, 
-            useWeighted, 
+        ShuffleFilterUtil.SelectionResult selection = selectBlockForPosition(
+            blockList,
+            useWeighted,
             currentPos,
-            world, 
+            world,
             inv
         );
-        
+
+        // Skip marker rolled: don't place anything, don't break the ground block.
+        // tryFill / handleShuffleFilterSlab will short-circuit on the flag.
+        if (selection.isSkip()) {
+            createshufflefilter$intentionalSkip = true;
+            createshufflefilter$lastSelectedBlock = ItemStack.EMPTY;
+            cir.setReturnValue(net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            return;
+        }
+
+        ItemStack selected = selection.stack();
         if (selected.isEmpty()) {
             // No blocks available in inventory
             createshufflefilter$lastSelectedBlock = ItemStack.EMPTY;
@@ -201,6 +246,13 @@ public class MixinRollerMovementBehaviour {
         Item filterItem = filterStack.getItem();
         if (!(filterItem instanceof BaseShuffleFilterItem)) {
             return; // Not our filter - let Create handle it
+        }
+
+        // Intentional skip: place no slab either.
+        if (createshufflefilter$intentionalSkip) {
+            createshufflefilter$slabAvailable = false;
+            cir.setReturnValue(net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+            return;
         }
 
         // If we have a selected block, try to find its slab variant
@@ -307,8 +359,16 @@ public class MixinRollerMovementBehaviour {
             return; // Not our filter, let Create handle it
         }
 
+        // Intentional skip: roller treats this position as handled, places nothing,
+        // doesn't try to extract anything, doesn't fall back to other entries.
+        if (createshufflefilter$intentionalSkip) {
+            Enum<?> pass = createshufflefilter$paveResult(1); // PASS
+            if (pass != null) cir.setReturnValue(pass);
+            return;
+        }
+
         Level level = context.world;
-        
+
         // Check if world position is loaded
         if (!level.isLoaded(targetPos)) {
             // Can't reference PaveResult.FAIL directly, but we can return early and let Create handle it
@@ -373,7 +433,7 @@ public class MixinRollerMovementBehaviour {
             );
             
             // Try each entry as fallback using cascading logic
-            ItemStack fallbackResult = ShuffleFilterUtil.selectItemCascading(
+            ShuffleFilterUtil.SelectionResult fallback = ShuffleFilterUtil.selectItemCascading(
                 blockList,
                 filterItem instanceof WeightedShuffleFilterItem,
                 level,
@@ -381,12 +441,19 @@ public class MixinRollerMovementBehaviour {
                 0,
                 new java.util.HashSet<>()
             );
-            
-            if (fallbackResult.isEmpty()) {
+
+            // Re-roll landed on Skip: treat the position as intentionally skipped.
+            if (fallback.isSkip()) {
+                Enum<?> pass = createshufflefilter$paveResult(1); // PASS
+                if (pass != null) cir.setReturnValue(pass);
+                return;
+            }
+
+            if (fallback.stack().isEmpty()) {
                 return; // Let Create's logic fail properly
             }
-            
-            held = fallbackResult;
+
+            held = fallback.stack();
             // Update toPlace BlockState to match fallback item
             if (held.getItem() instanceof net.minecraft.world.item.BlockItem fallbackBlockItem) {
                 BlockState originalToPlace = toPlace;
@@ -416,22 +483,11 @@ public class MixinRollerMovementBehaviour {
 
         // Place the block
         level.setBlockAndUpdate(targetPos, toPlace);
-        
-        // We need to return SUCCESS, but since PaveResult is private, we'll use reflection
-        // or just cancel and let the block placement speak for itself
-        // Actually, since we already placed the block, we can just not return anything and let Create see it
-        // But we need to tell the mixin we handled it
-        // The safest is to get the enum values and return the right one
-        
-        try {
-            // Get the PaveResult enum class (it's a private inner class)
-            Class<?> paveResultClass = Class.forName("com.simibubi.create.content.contraptions.actors.roller.RollerMovementBehaviour$PaveResult");
-            Object[] values = (Object[]) paveResultClass.getMethod("values").invoke(null);
-            // PaveResult enum order: FAIL=0, PASS=1, SUCCESS=2
-            cir.setReturnValue((Enum<?>) values[2]); // SUCCESS
-        } catch (Exception e) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.error("Failed to return PaveResult.SUCCESS", e);
-        }
+
+        // Tell Create the placement succeeded. PaveResult is private inside Create, so we
+        // rely on the cached enum values resolved once at class init.
+        Enum<?> success = createshufflefilter$paveResult(2); // SUCCESS
+        if (success != null) cir.setReturnValue(success);
     }
 
     /**
@@ -476,11 +532,18 @@ public class MixinRollerMovementBehaviour {
         
         // For shuffle filters, determine startingY based on whether we have blocks available
         BlockState stateToPaveWith = this.getStateToPaveWith(context);
-        int startingY = 1; // Default: don't break ground level        
+        int startingY = 1; // Default: don't break ground level
         if (!stateToPaveWith.isAir() && !createshufflefilter$lastSelectedBlock.isEmpty()) {
             startingY = 0; // We have blocks, so break from ground level
         }
 
+        // Skip-rolled and stockout-empty positions both end up with startingY=1, which means:
+        //  - PAVE: nothing is broken, nothing is placed (the position is left alone — matches
+        //    the issue's "no need to remove if there is a block at that position").
+        //  - TUNNEL_PAVE: the floor is preserved but the two blocks above are still cleared so
+        //    the contraption itself can travel through. The same overhead-clear rule applies
+        //    to the existing "no inventory" case, so skip inherits that behaviour rather than
+        //    introducing a new rule for it.
         // Use Create's testBreakerTarget logic (which we hook with skipBreakingFilterBlocks)
         // For TUNNEL_PAVE mode, break blocks above the position
         if (scrollValue == 4) { // TUNNEL_PAVE
@@ -563,16 +626,17 @@ public class MixinRollerMovementBehaviour {
      * Position-based deterministic block selection with cascading support
      * Uses position as seed for Random to ensure same position = same block
      * Recursively resolves nested shuffle filters using position-based determinism
-     * 
+     *
      * @param blockList Current filter's block list
      * @param useWeighted Whether to use weighted selection
      * @param pos World position (used as seed for determinism)
      * @param world Level for random generation
      * @param inv Contraption inventory
-     * @return Selected ItemStack (Create filter or concrete block) or EMPTY if none available
+     * @return SelectionResult: SKIP for the Skip marker, NONE if nothing is available,
+     *         or a wrapped concrete/Create-filter ItemStack.
      */
     @Unique
-    private static ItemStack selectBlockForPosition(
+    private static ShuffleFilterUtil.SelectionResult selectBlockForPosition(
             ShuffleBlockList blockList,
             boolean useWeighted,
             BlockPos pos,
@@ -585,23 +649,23 @@ public class MixinRollerMovementBehaviour {
      * Internal method with depth tracking for cascade limit
      */
     @Unique
-    private static ItemStack selectBlockForPositionWithDepth(
+    private static ShuffleFilterUtil.SelectionResult selectBlockForPositionWithDepth(
             ShuffleBlockList blockList,
             boolean useWeighted,
             BlockPos pos,
             Level world,
             IItemHandler inv,
             int depth) {
-        
+
         // Depth protection
         if (depth >= ShuffleFilterUtil.MAX_CASCADE_DEPTH) {
-            return ItemStack.EMPTY;
+            return ShuffleFilterUtil.SelectionResult.NONE;
         }
-        
+
         // Filter to only blocks available in inventory
         List<ShuffleBlockList.BlockEntry> availableBlocks = getAvailableBlocks(blockList, inv);
         if (availableBlocks.isEmpty()) {
-            return ItemStack.EMPTY;
+            return ShuffleFilterUtil.SelectionResult.NONE;
         }
         
         // Create filtered block list with available blocks only
@@ -643,16 +707,21 @@ public class MixinRollerMovementBehaviour {
         }
         
         if (selectedEntry == null) {
-            return ItemStack.EMPTY;
+            return ShuffleFilterUtil.SelectionResult.NONE;
+        }
+
+        // Skip marker rolled: short-circuit, caller handles "place nothing".
+        if (ShuffleFilterUtil.isSkipEntry(selectedEntry)) {
+            return ShuffleFilterUtil.SelectionResult.SKIP;
         }
 
         ItemStack configured = selectedEntry.getItemStack();
         if (configured.isEmpty()) {
-            return ItemStack.EMPTY;
+            return ShuffleFilterUtil.SelectionResult.NONE;
         }
-        
+
         Item item = configured.getItem();
-        
+
         // If selected item is a nested shuffle filter, recursively resolve it
         // This maintains position-based determinism throughout the cascade
         if (item instanceof BaseShuffleFilterItem) {
@@ -660,11 +729,11 @@ public class MixinRollerMovementBehaviour {
                 ModDataComponents.SHUFFLE_BLOCK_LIST.get(),
                 ShuffleBlockList.EMPTY
             );
-            
+
             if (nestedList.isEmpty()) {
-                return ItemStack.EMPTY;
+                return ShuffleFilterUtil.SelectionResult.NONE;
             }
-            
+
             // Recursively select from nested filter using SAME position for determinism
             boolean nestedWeighted = item instanceof WeightedShuffleFilterItem;
             return selectBlockForPositionWithDepth(
@@ -676,10 +745,10 @@ public class MixinRollerMovementBehaviour {
                 depth + 1
             );
         }
-        
+
         // Return the resolved item (Create filter or concrete block)
         // Extraction happens later in tryFill mixin
-        return configured;
+        return ShuffleFilterUtil.SelectionResult.of(configured);
     }
 
 
@@ -698,17 +767,23 @@ public class MixinRollerMovementBehaviour {
             ShuffleBlockList blockList,
             IItemHandler inv) {
         List<ShuffleBlockList.BlockEntry> available = new ArrayList<>();
-        
+
         for (ShuffleBlockList.BlockEntry entry : blockList.blocks()) {
+            // Skip marker is "always available" - no inventory item needed to do nothing.
+            if (ShuffleFilterUtil.isSkipEntry(entry)) {
+                available.add(entry);
+                continue;
+            }
+
             ItemStack stack = entry.getItemStack();
             if (stack.isEmpty()) continue;
-            
+
             // Check if this entry has available items (handles cascading)
             if (isEntryAvailable(stack, inv, 0)) {
                 available.add(entry);
             }
         }
-        
+
         return available;
     }
 
@@ -724,9 +799,14 @@ public class MixinRollerMovementBehaviour {
     private static boolean isEntryAvailable(ItemStack configuredStack, IItemHandler inv, int depth) {
         if (configuredStack.isEmpty()) return false;
         if (depth >= ShuffleFilterUtil.MAX_CASCADE_DEPTH) return false;
-        
+
         Item item = configuredStack.getItem();
-        
+
+        // Case 0: Skip marker - placing nothing never needs an inventory item.
+        if (item instanceof com.agent772.createshufflefilter.item.SkipItem) {
+            return true;
+        }
+
         // Case 1: Nested shuffle filter - recursively check its contents
         if (item instanceof BaseShuffleFilterItem) {
             ShuffleBlockList nestedList = configuredStack.getOrDefault(
@@ -825,12 +905,18 @@ public class MixinRollerMovementBehaviour {
         
         // Try each block in the filter
         for (ShuffleBlockList.BlockEntry entry : blockList.blocks()) {
+            // Skip marker never contributes a slab variant - explicit guard for parity
+            // with the other selection helpers.
+            if (ShuffleFilterUtil.isSkipEntry(entry)) {
+                continue;
+            }
+
             ItemStack configured = entry.getItemStack();
-            
+
             if (configured.isEmpty()) {
                 continue;
             }
-            
+
             // Handle nested shuffle filters recursively
             if (configured.getItem() instanceof BaseShuffleFilterItem) {
                 ShuffleBlockList nestedList = configured.getOrDefault(
@@ -988,15 +1074,20 @@ public class MixinRollerMovementBehaviour {
             
             // Emergency fallback: select and extract
             boolean nestedWeighted = item instanceof WeightedShuffleFilterItem;
-            ItemStack nestedSelected = selectBlockForPosition(
+            ShuffleFilterUtil.SelectionResult nestedSelection = selectBlockForPosition(
                 nestedList,
                 nestedWeighted,
                 pos,
                 world,
                 inv
             );
-            
-            return extractBlockFromCascadingFilter(nestedSelected, pos, world, inv, depth + 1);
+
+            // Nested selection landed on Skip - propagate "do nothing" to caller.
+            if (nestedSelection.isSkip() || nestedSelection.stack().isEmpty()) {
+                return ItemStack.EMPTY;
+            }
+
+            return extractBlockFromCascadingFilter(nestedSelection.stack(), pos, world, inv, depth + 1);
         }
         
         // Create filter - use its matching logic

@@ -4,6 +4,9 @@
   "_comment_items": "Item names",
   "item.createshufflefilter.shuffle_filter": "Shuffle Filter",
   "item.createshufflefilter.weighted_shuffle_filter": "Weighted Shuffle Filter",
+  "item.createshufflefilter.skip": "Skip",
+  "item.createshufflefilter.skip.tooltip.1": "Place this in a shuffle filter slot",
+  "item.createshufflefilter.skip.tooltip.2": "When rolled, no block is placed for that position",
   
   "_comment_gui": "GUI Screen translations",
   "screen.createshufflefilter.shuffle_filter.title": "Equal Shuffle Filter",

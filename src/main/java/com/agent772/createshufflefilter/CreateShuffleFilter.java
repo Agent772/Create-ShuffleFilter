@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import com.agent772.createshufflefilter.component.ModDataComponents;
 import com.agent772.createshufflefilter.component.ShuffleBlockList;
 import com.agent772.createshufflefilter.item.ShuffleFilterItem;
+import com.agent772.createshufflefilter.item.SkipItem;
 import com.agent772.createshufflefilter.item.WeightedShuffleFilterItem;
 import com.agent772.createshufflefilter.menu.ModMenuTypes;
 import com.mojang.logging.LogUtils;
@@ -36,12 +37,21 @@ public class CreateShuffleFilter {
             .register();
     
     // Weighted shuffle filter (configurable weights)
-    public static final ItemEntry<WeightedShuffleFilterItem> WEIGHTED_SHUFFLE_FILTER = 
+    public static final ItemEntry<WeightedShuffleFilterItem> WEIGHTED_SHUFFLE_FILTER =
         REGISTRATE.item("weighted_shuffle_filter", WeightedShuffleFilterItem::new)
             .properties(p -> p
                 .component(ModDataComponents.SHUFFLE_BLOCK_LIST.get(), ShuffleBlockList.EMPTY)
             )
             .lang("Weighted Shuffle Filter")
+            .register();
+
+    // Skip marker - placed in a shuffle slot to mean "place nothing when rolled".
+    // stacksTo(1) since one Skip per slot is all anyone ever needs - keeps inventories tidy
+    // when a player grabs it from JEI.
+    public static final ItemEntry<SkipItem> SKIP =
+        REGISTRATE.item("skip", SkipItem::new)
+            .properties(p -> p.stacksTo(1))
+            .lang("Skip")
             .register();
 
     public CreateShuffleFilter(IEventBus modEventBus, ModContainer modContainer) {

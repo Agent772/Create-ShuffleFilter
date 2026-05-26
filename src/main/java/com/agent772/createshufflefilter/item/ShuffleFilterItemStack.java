@@ -41,7 +41,14 @@ public class ShuffleFilterItemStack extends FilterItemStack {
             if (configuredItem.isEmpty()) {
                 continue;
             }
-            
+
+            // Skip marker is a config-only entry: it never matches anything in
+            // funnels/basins. Without this, a Skip item travelling through a
+            // hopper would be accepted by a filter that contains a Skip slot.
+            if (configuredItem.getItem() instanceof SkipItem) {
+                continue;
+            }
+
             // Check if the configured item is itself a filter (cascading)
             if (configuredItem.getItem() instanceof FilterItem) {
                 FilterItemStack nestedFilter = FilterItemStack.of(configuredItem);
