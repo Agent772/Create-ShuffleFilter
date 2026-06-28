@@ -34,7 +34,7 @@ public class MixinRollerBlockEntity {
     private void allowShuffleFilters(ItemStack newFilter, CallbackInfoReturnable<Boolean> cir) {
         // Shuffle filters are always valid - they select from configured blocks at runtime
         if (newFilter.getItem() instanceof BaseShuffleFilterItem) {
-            LOGGER.info("Allowing shuffle filter in roller: {}", newFilter.getDescriptionId());
+            LOGGER.debug("Allowing shuffle filter in roller: {}", newFilter.getDescriptionId());
             cir.setReturnValue(true);
         }
     }
