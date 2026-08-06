@@ -13,12 +13,13 @@ jobs:
         env:
           GH_REPO: "Agent772/Create-ShuffleFilter"
           GITEA_REPO: "Agent772/Create-ShuffleFilter"
+          GITEA_TOKEN: ${{ github.token }}
         run: |
           GITEA_API="https://gitea.matejhoz.com/api/v1"
-          GITEA_TOKEN="${{ github.token }}"
 
           echo "Fetching open issues from GitHub: ${GH_REPO}"
-          gh_issues=$(curl -sf "https://api.github.com/repos/${GH_REPO}/issues?state=open&per_page=100"             -H "Accept: application/vnd.github+json" || echo "[]")
+          gh_issues=$(curl -sf "https://api.github.com/repos/${GH_REPO}/issues?state=open&per_page=100" \
+            -H "Accept: application/vnd.github+json" || echo "[]")
 
           echo "$gh_issues" | jq -c '.[] | select(.pull_request == null)' | while read -r issue; do
             number=$(echo "$issue" | jq -r '.number')
@@ -28,30 +29,39 @@ jobs:
             labels=$(echo "$issue" | jq -r '[.labels[].name] | join(", ")')
             marker="<!-- gh-issue:${number} -->"
 
-            existing=$(curl -sf "${GITEA_API}/repos/${GITEA_REPO}/issues?type=issues&state=open&limit=50"               -H "Authorization: token ${GITEA_TOKEN}"               | jq -r --arg marker "$marker" '.[] | select(.body | contains($marker)) | .number')
+            existing=$(curl -sf "${GITEA_API}/repos/${GITEA_REPO}/issues?type=issues&state=open&limit=50" \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              | jq -r --arg m "$marker" '.[] | select(.body | contains($m)) | .number')
 
             if [ -z "$existing" ]; then
-              existing=$(curl -sf "${GITEA_API}/repos/${GITEA_REPO}/issues?type=issues&state=closed&limit=50"                 -H "Authorization: token ${GITEA_TOKEN}"                 | jq -r --arg marker "$marker" '.[] | select(.body | contains($marker)) | .number')
+              existing=$(curl -sf "${GITEA_API}/repos/${GITEA_REPO}/issues?type=issues&state=closed&limit=50" \
+                -H "Authorization: token ${GITEA_TOKEN}" \
+                | jq -r --arg m "$marker" '.[] | select(.body | contains($m)) | .number')
             fi
 
             if [ -n "$existing" ]; then
-              echo "Issue #${number} already imported as Gitea #${existing}, skipping"
+              echo "Issue #${number} already exists as Gitea #${existing}, skipping"
               continue
             fi
 
             echo "Importing GitHub issue #${number}: ${title}"
+
             label_line=""
             if [ -n "$labels" ]; then
               label_line="**Labels:** ${labels}"
             fi
 
-            import_body="${marker}
-> Imported from [GitHub issue #${number}](${gh_url})
-${label_line:+
-${label_line}}
+            printf '%s\n> Imported from [GitHub issue #%s](%s)\n%s\n\n%s' \
+              "$marker" "$number" "$gh_url" "$label_line" "$body" > /tmp/issue_body.txt
 
-${body}"
+            jq -n --arg title "$title" --rawfile body /tmp/issue_body.txt \
+              '{title: $title, body: $body}' > /tmp/issue_payload.json
 
-            curl -sf -X POST "${GITEA_API}/repos/${GITEA_REPO}/issues"               -H "Authorization: token ${GITEA_TOKEN}"               -H "Content-Type: application/json"               -d "$(jq -n                 --arg title "$title"                 --arg body "$import_body"                 '{title: $title, body: $body}')"               && echo "  -> Created successfully"               || echo "  -> Failed to create"
+            curl -sf -X POST "${GITEA_API}/repos/${GITEA_REPO}/issues" \
+              -H "Authorization: token ${GITEA_TOKEN}" \
+              -H "Content-Type: application/json" \
+              -d @/tmp/issue_payload.json \
+              && echo "  -> Created successfully" \
+              || echo "  -> Failed to create"
           done
           echo "Sync complete"
