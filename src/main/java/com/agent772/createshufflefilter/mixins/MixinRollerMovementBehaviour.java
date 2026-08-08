@@ -359,8 +359,8 @@ public class MixinRollerMovementBehaviour {
             return; // Not our filter, let Create handle it
         }
 
-        // Intentional skip: roller treats this position as handled, places nothing,
-        // doesn't try to extract anything, doesn't fall back to other entries.
+        // Column-level intentional skip: getStateToPaveWith rolled Skip for the whole
+        // column, so leave every position untouched.
         if (createshufflefilter$intentionalSkip) {
             Enum<?> pass = createshufflefilter$paveResult(1); // PASS
             if (pass != null) cir.setReturnValue(pass);
@@ -375,11 +375,53 @@ public class MixinRollerMovementBehaviour {
             return;
         }
 
-        // Check if block already matches
+        IItemHandler inv = context.contraption.getStorage().getAllItems();
+        ShuffleBlockList blockList = filterStack.getOrDefault(
+            ModDataComponents.SHUFFLE_BLOCK_LIST.get(),
+            ShuffleBlockList.EMPTY
+        );
+        boolean useWeighted = filterItem instanceof WeightedShuffleFilterItem;
+
+        // A partial slab (BOTTOM/TOP) is the train-track paving pass: keep the column-level
+        // selection, whose slab availability was already resolved in getStateToPaveWithAsSlab.
+        boolean slabPass = toPlace.hasProperty(SlabBlock.TYPE)
+            && toPlace.getValue(SlabBlock.TYPE) != SlabType.DOUBLE;
+
+        ItemStack toExtract = createshufflefilter$lastSelectedBlock;
+
+        if (!slabPass) {
+            // Per-position re-roll seeded by targetPos (which carries the real Y). This makes
+            // every block in a fill column an independent draw instead of inheriting one
+            // material for the whole pillar, while staying deterministic per world position.
+            ShuffleFilterUtil.SelectionResult reroll =
+                selectBlockForPosition(blockList, useWeighted, targetPos, level, inv);
+
+            if (reroll.isSkip()) {
+                // Per-position hole: place nothing here and let the column keep descending.
+                Enum<?> pass = createshufflefilter$paveResult(1); // PASS
+                if (pass != null) cir.setReturnValue(pass);
+                return;
+            }
+
+            if (!reroll.stack().isEmpty()) {
+                toExtract = reroll.stack();
+                if (toExtract.getItem() instanceof net.minecraft.world.item.BlockItem blockItem) {
+                    BlockState state = blockItem.getBlock().defaultBlockState();
+                    if (state.hasProperty(SlabBlock.TYPE)) {
+                        state = state.setValue(SlabBlock.TYPE, SlabType.DOUBLE);
+                    }
+                    toPlace = state;
+                }
+            }
+        }
+
+        // Leave a position alone if it already holds a filter block (the re-rolled one or any
+        // other entry). This keeps re-visits idempotent - the paver re-walks each column from
+        // the top after every placement, so without this it could break and re-place blocks.
         BlockState existing = level.getBlockState(targetPos);
-        if (existing.is(toPlace.getBlock())) {
-            // Block already correct - no action needed but don't fail
-            // Let Create's logic handle the PASS case
+        if (existing.is(toPlace.getBlock()) || createshufflefilter$isFilterBlock(existing, blockList)) {
+            Enum<?> pass = createshufflefilter$paveResult(1); // PASS
+            if (pass != null) cir.setReturnValue(pass);
             return;
         }
 
@@ -391,53 +433,29 @@ public class MixinRollerMovementBehaviour {
             return;
         }
 
-        // Extract the item we selected earlier
-        if (createshufflefilter$lastSelectedBlock.isEmpty()) {
+        // Nothing selected/available for this position
+        if (toExtract.isEmpty()) {
             return; // Let Create's logic fail properly
         }
-        
-        // Determine what we should try to extract based on what toPlace needs
-        ItemStack toExtract = createshufflefilter$lastSelectedBlock;
-        
-        // If toPlace is a slab (BOTTOM/TOP, not DOUBLE), try to extract slab variant first
-        if (toPlace.hasProperty(SlabBlock.TYPE) && toPlace.getValue(SlabBlock.TYPE) != SlabType.DOUBLE) {
-            if (createshufflefilter$lastSelectedBlock.getItem() instanceof net.minecraft.world.item.BlockItem blockItem) {
-                Block fullBlock = blockItem.getBlock();
-                
-                // First try to find pre-crafted slab in inventory
-                ItemStack slabStack = findSlabVariantInInventory(fullBlock, context.contraption.getStorage().getAllItems());
-                if (!slabStack.isEmpty()) {
-                    toExtract = slabStack;
-                }
+
+        // Slab paving pass: prefer a real slab item from inventory if one exists.
+        if (slabPass && toExtract.getItem() instanceof net.minecraft.world.item.BlockItem blockItem) {
+            ItemStack slabStack = findSlabVariantInInventory(blockItem.getBlock(), inv);
+            if (!slabStack.isEmpty()) {
+                toExtract = slabStack;
             }
         }
-        
-        // Resolve cascading filters and extract the actual block item
-        ItemStack held = extractBlockFromCascadingFilter(
-            toExtract,  // Extract slab if available, otherwise full block
-            targetPos,
-            level,
-            context.contraption.getStorage().getAllItems(),
-            0
-        );
 
-        com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Extracted: {}", held);
+        // Resolve cascading filters and extract the actual block item
+        ItemStack held = extractBlockFromCascadingFilter(toExtract, targetPos, level, inv, 0);
 
         if (held.isEmpty()) {
-            com.agent772.createshufflefilter.CreateShuffleFilter.LOGGER.info("Extraction failed! Trying fallback...");
-            
-            // The pre-selected block ran out - try fallback to other blocks in filter
-            ShuffleBlockList blockList = filter.item().getOrDefault(
-                ModDataComponents.SHUFFLE_BLOCK_LIST.get(),
-                ShuffleBlockList.EMPTY
-            );
-            
-            // Try each entry as fallback using cascading logic
+            // The selected material ran out this tick - fall back to any available filter block.
             ShuffleFilterUtil.SelectionResult fallback = ShuffleFilterUtil.selectItemCascading(
                 blockList,
-                filterItem instanceof WeightedShuffleFilterItem,
+                useWeighted,
                 level,
-                context.contraption.getStorage().getAllItems(),
+                inv,
                 0,
                 new java.util.HashSet<>()
             );
@@ -458,7 +476,7 @@ public class MixinRollerMovementBehaviour {
             if (held.getItem() instanceof net.minecraft.world.item.BlockItem fallbackBlockItem) {
                 BlockState originalToPlace = toPlace;
                 toPlace = fallbackBlockItem.getBlock().defaultBlockState();
-                
+
                 // Preserve slab type if toPlace was already a slab
                 if (originalToPlace.hasProperty(SlabBlock.TYPE) && toPlace.hasProperty(SlabBlock.TYPE)) {
                     SlabType originalType = originalToPlace.getValue(SlabBlock.TYPE);
@@ -469,12 +487,12 @@ public class MixinRollerMovementBehaviour {
                 }
             }
         }
-        
+
         // CRITICAL CHECK: If slab was needed but none available (neither pre-crafted nor craftable), DON'T place
         // User requirement: "if slab needed, slab doesnt exist -> place nothing"
         if (toPlace.hasProperty(SlabBlock.TYPE)) {
             SlabType neededType = toPlace.getValue(SlabBlock.TYPE);
-            
+
             // If we need a BOTTOM or TOP slab (not DOUBLE/full block) but no slab was found
             if (neededType != SlabType.DOUBLE && !createshufflefilter$slabAvailable) {
                 return; // Don't place - slab doesn't exist for this material
@@ -667,10 +685,10 @@ public class MixinRollerMovementBehaviour {
         if (availableBlocks.isEmpty()) {
             return ShuffleFilterUtil.SelectionResult.NONE;
         }
-        
+
         // Create filtered block list with available blocks only
         ShuffleBlockList filteredList = new ShuffleBlockList(availableBlocks);
-        
+
         // Create deterministic Random from position
         // Apply Stafford variant 13 bit-mixing to pos.asLong() so adjacent positions
         // produce uncorrelated seeds (fixes visible patterns along straight lines)
@@ -754,10 +772,28 @@ public class MixinRollerMovementBehaviour {
 
 
     /**
+     * True when the block at a position is one of the filter's (top-level) block entries.
+     * Used to leave already-placed filter blocks untouched on re-visits, mirroring the
+     * check in {@link #skipBreakingFilterBlocks}.
+     */
+    @Unique
+    private static boolean createshufflefilter$isFilterBlock(BlockState state, ShuffleBlockList blockList) {
+        for (ShuffleBlockList.BlockEntry entry : blockList.blocks()) {
+            if (ShuffleFilterUtil.isSkipEntry(entry)) continue;
+            ItemStack entryStack = entry.getItemStack();
+            if (entryStack.getItem() instanceof net.minecraft.world.item.BlockItem blockItem
+                && state.is(blockItem.getBlock())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Filters block list to only entries that are available in inventory
      * This prevents selecting blocks that can't be placed
      * Handles cascading filters recursively
-     * 
+     *
      * @param blockList Full block list from filter
      * @param inv Contraption inventory
      * @return List of entries that have items available in inventory
