@@ -21,6 +21,14 @@ tasks.named('jar', Jar) {
 // Mojang ships Java 17 to end users in 1.20.1, so mods should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
+// GameTest classes live in their own source set so they never ship in the mod jar.
+sourceSets {
+    gametest {
+        compileClasspath += sourceSets.main.output
+        runtimeClasspath += sourceSets.main.output
+    }
+}
+
 idea {
     module {
         downloadJavadoc = true
@@ -39,6 +47,7 @@ legacyForge {
     mods {
         "${mod_id}" {
             sourceSet(sourceSets.main)
+            sourceSet(sourceSets.gametest)
         }
     }
 
@@ -65,6 +74,18 @@ legacyForge {
             programArguments.addAll '--mixin.config', 'createshufflefilter.mixins.json'
         }
 
+        // Headless smoke tests: ./gradlew runGameTestServer (exits non-zero on failure).
+        gameTestServer {
+            type = "gameTestServer"
+            sourceSet = sourceSets.gametest
+            gameDirectory = project.file("run/gametest")
+
+            systemProperty 'forge.logging.markers', 'REGISTRIES'
+            systemProperty 'forge.logging.console.level', 'debug'
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
+            programArguments.addAll '--mixin.config', 'createshufflefilter.mixins.json'
+        }
+
         data {
             data()
             gameDirectory = project.file("run")
@@ -87,6 +108,8 @@ repositories {
 // Sets up a dependency configuration called 'localRuntime'.
 configurations {
     runtimeClasspath.extendsFrom localRuntime
+    gametestCompileClasspath.extendsFrom compileClasspath
+    gametestRuntimeClasspath.extendsFrom runtimeClasspath
 }
 
 dependencies {
