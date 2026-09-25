@@ -11,8 +11,13 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraftforge.event.RegisterGameTestsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -24,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Smoke tests. Run headless with {@code ./gradlew runGameTestServer}; the server exits
@@ -291,6 +297,203 @@ public class ShuffleFilterGameTests {
             nested, new BlockPos(0, 64, 0), helper.getLevel(), inv, 0);
         helper.assertTrue(extracted.isEmpty(), "Expected EMPTY for nested Skip, got " + extracted);
         helper.assertTrue(inv.getStackInSlot(0).getCount() == 1, "Skip item was extracted from inventory");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void rollerFillVariesVertically(GameTestHelper helper) {
+        // The fill fix re-rolls each position (seeded by its full BlockPos, Y included). With two
+        // materials stocked, a vertical column must not collapse to a single material.
+        ItemStackHandler inv = new ItemStackHandler(2);
+        inv.setStackInSlot(0, new ItemStack(Items.STONE, 64));
+        inv.setStackInSlot(1, new ItemStack(Items.DIRT, 64));
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withBlock(new ResourceLocation("minecraft", "dirt"), 1.0f);
+
+        Set<Item> seen = new HashSet<>();
+        for (int y = 0; y < 32; y++) {
+            ShuffleFilterUtil.SelectionResult r = RollerSelectionUtil.selectBlockForPosition(
+                list, false, new BlockPos(7, y, 3), helper.getLevel(), inv);
+            helper.assertFalse(r.isSkip(), "Unexpected SKIP at y=" + y);
+            seen.add(r.stack().getItem());
+        }
+        helper.assertTrue(seen.size() >= 2, "Column filled with a single material: " + seen);
+        helper.assertTrue(inv.getStackInSlot(0).getCount() == 64 && inv.getStackInSlot(1).getCount() == 64,
+            "Selection must not extract");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void rollerFillPerPositionDeterministic(GameTestHelper helper) {
+        ItemStackHandler inv = new ItemStackHandler(2);
+        inv.setStackInSlot(0, new ItemStack(Items.STONE, 64));
+        inv.setStackInSlot(1, new ItemStack(Items.DIRT, 64));
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withBlock(new ResourceLocation("minecraft", "dirt"), 1.0f);
+
+        for (int y = 0; y < 32; y++) {
+            BlockPos pos = new BlockPos(7, y, 3);
+            ShuffleFilterUtil.SelectionResult first = RollerSelectionUtil.selectBlockForPosition(list, false, pos, helper.getLevel(), inv);
+            ShuffleFilterUtil.SelectionResult second = RollerSelectionUtil.selectBlockForPosition(list, false, pos, helper.getLevel(), inv);
+            helper.assertTrue(first.stack().getItem() == second.stack().getItem(),
+                "Non-deterministic at " + pos + ": " + first + " vs " + second);
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void rollerFillSkipPerPosition(GameTestHelper helper) {
+        // Stone + Skip down a column: some positions leave a hole (SKIP), others get stone, so
+        // the column keeps descending past individual holes.
+        ItemStackHandler inv = new ItemStackHandler(1);
+        inv.setStackInSlot(0, new ItemStack(Items.STONE, 64));
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withItemStack(CreateShuffleFilter.SKIP.asStack(), 1.0f);
+
+        int skips = 0;
+        int stones = 0;
+        for (int y = 0; y < 64; y++) {
+            ShuffleFilterUtil.SelectionResult r = RollerSelectionUtil.selectBlockForPosition(
+                list, false, new BlockPos(2, y, 9), helper.getLevel(), inv);
+            if (r.isSkip()) skips++;
+            else if (r.stack().is(Items.STONE)) stones++;
+        }
+        helper.assertTrue(skips > 0 && stones > 0,
+            "Expected both Skip and stone down the column, got skips=" + skips + " stones=" + stones);
+        helper.assertTrue(inv.getStackInSlot(0).getCount() == 64, "Selection must not extract");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void decideFillRerollsPerPosition(GameTestHelper helper) {
+        // The core of the fix: on the non-slab path the block comes from a per-position re-roll,
+        // NOT from the column-level lastSelected. lastSelected is pinned to stone; the decision
+        // must still yield dirt at some Y levels down the column. The old code (which reused
+        // lastSelected for every position) could never produce dirt here.
+        ItemStackHandler inv = new ItemStackHandler(2);
+        inv.setStackInSlot(0, new ItemStack(Items.STONE, 64));
+        inv.setStackInSlot(1, new ItemStack(Items.DIRT, 64));
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withBlock(new ResourceLocation("minecraft", "dirt"), 1.0f);
+        ItemStack lastSelected = new ItemStack(Items.STONE);
+        BlockState fullBlock = Blocks.STONE.defaultBlockState();
+
+        Set<Item> placed = new HashSet<>();
+        for (int y = 0; y < 32; y++) {
+            RollerSelectionUtil.FillDecision d = RollerSelectionUtil.decideFill(
+                list, false, new BlockPos(7, y, 3), fullBlock, lastSelected,
+                helper.getLevel(), inv, Blocks.AIR.defaultBlockState());
+            helper.assertTrue(d.outcome() == RollerSelectionUtil.FillOutcome.PLACE,
+                "Expected PLACE at y=" + y + ", got " + d.outcome());
+            placed.add(d.toExtract().getItem());
+            // toPlace is derived from the re-roll, not from lastSelected (stone).
+            helper.assertTrue(d.toPlace().is(Blocks.STONE) || d.toPlace().is(Blocks.DIRT),
+                "toPlace must be a re-rolled filter block at y=" + y + ", got " + d.toPlace());
+        }
+        helper.assertTrue(placed.contains(Items.DIRT),
+            "Non-slab path never re-rolled off lastSelected (stone): " + placed);
+        helper.assertTrue(placed.size() >= 2, "Column collapsed to a single material: " + placed);
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void decideFillSlabPassKeepsLastSelected(GameTestHelper helper) {
+        // Slab paving pass (BOTTOM/TOP): no re-roll, lastSelected and the partial-slab toPlace
+        // are both preserved.
+        ItemStackHandler inv = new ItemStackHandler(2);
+        inv.setStackInSlot(0, new ItemStack(Items.STONE, 64));
+        inv.setStackInSlot(1, new ItemStack(Items.DIRT, 64));
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withBlock(new ResourceLocation("minecraft", "dirt"), 1.0f);
+        ItemStack lastSelected = new ItemStack(Items.DIRT);
+        BlockState slab = Blocks.STONE_SLAB.defaultBlockState().setValue(SlabBlock.TYPE, SlabType.BOTTOM);
+
+        for (int y = 0; y < 16; y++) {
+            RollerSelectionUtil.FillDecision d = RollerSelectionUtil.decideFill(
+                list, false, new BlockPos(1, y, 1), slab, lastSelected,
+                helper.getLevel(), inv, Blocks.AIR.defaultBlockState());
+            helper.assertTrue(d.outcome() == RollerSelectionUtil.FillOutcome.PLACE,
+                "Expected PLACE at y=" + y + ", got " + d.outcome());
+            helper.assertTrue(d.toExtract().is(Items.DIRT), "Slab pass must keep lastSelected, got " + d.toExtract());
+            helper.assertTrue(d.toPlace().is(Blocks.STONE_SLAB)
+                    && d.toPlace().getValue(SlabBlock.TYPE) == SlabType.BOTTOM,
+                "Slab pass must keep the partial-slab toPlace, got " + d.toPlace());
+        }
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void decideFillExistingFilterBlockPasses(GameTestHelper helper) {
+        // A position that already holds a filter block is left alone (idempotent re-visit),
+        // regardless of what the re-roll picked.
+        ItemStackHandler inv = new ItemStackHandler(2);
+        inv.setStackInSlot(0, new ItemStack(Items.STONE, 64));
+        inv.setStackInSlot(1, new ItemStack(Items.DIRT, 64));
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withBlock(new ResourceLocation("minecraft", "dirt"), 1.0f);
+
+        for (int y = 0; y < 32; y++) {
+            RollerSelectionUtil.FillDecision d = RollerSelectionUtil.decideFill(
+                list, false, new BlockPos(4, y, 4), Blocks.STONE.defaultBlockState(),
+                new ItemStack(Items.STONE), helper.getLevel(), inv, Blocks.DIRT.defaultBlockState());
+            helper.assertTrue(d.outcome() == RollerSelectionUtil.FillOutcome.PASS_ALREADY_FILLED,
+                "Existing filter block must PASS at y=" + y + ", got " + d.outcome());
+        }
+        // A non-filter block is not treated as already filled.
+        RollerSelectionUtil.FillDecision place = RollerSelectionUtil.decideFill(
+            list, false, new BlockPos(4, 0, 5), Blocks.STONE.defaultBlockState(),
+            new ItemStack(Items.STONE), helper.getLevel(), inv, Blocks.GLASS.defaultBlockState());
+        helper.assertTrue(place.outcome() == RollerSelectionUtil.FillOutcome.PLACE,
+            "Non-filter block should not PASS, got " + place.outcome());
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void decideFillSkipLeavesHole(GameTestHelper helper) {
+        // stone + Skip down a column: some positions decide PASS_SKIP (hole), others PLACE stone.
+        ItemStackHandler inv = new ItemStackHandler(1);
+        inv.setStackInSlot(0, new ItemStack(Items.STONE, 64));
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withItemStack(CreateShuffleFilter.SKIP.asStack(), 1.0f);
+
+        int skips = 0;
+        int places = 0;
+        for (int y = 0; y < 64; y++) {
+            RollerSelectionUtil.FillDecision d = RollerSelectionUtil.decideFill(
+                list, false, new BlockPos(2, y, 9), Blocks.STONE.defaultBlockState(),
+                new ItemStack(Items.STONE), helper.getLevel(), inv, Blocks.AIR.defaultBlockState());
+            if (d.outcome() == RollerSelectionUtil.FillOutcome.PASS_SKIP) skips++;
+            else if (d.outcome() == RollerSelectionUtil.FillOutcome.PLACE && d.toExtract().is(Items.STONE)) places++;
+        }
+        helper.assertTrue(skips > 0 && places > 0,
+            "Expected both holes and stone down the column, got skips=" + skips + " places=" + places);
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY, batch = CreateShuffleFilter.MODID)
+    public static void isFilterBlockMatches(GameTestHelper helper) {
+        ShuffleBlockList list = ShuffleBlockList.EMPTY
+            .withBlock(new ResourceLocation("minecraft", "stone"), 1.0f)
+            .withBlock(new ResourceLocation("minecraft", "dirt"), 1.0f)
+            .withItemStack(CreateShuffleFilter.SKIP.asStack(), 1.0f);
+
+        helper.assertTrue(RollerSelectionUtil.isFilterBlock(Blocks.STONE.defaultBlockState(), list),
+            "stone should match a filter block");
+        helper.assertTrue(RollerSelectionUtil.isFilterBlock(Blocks.DIRT.defaultBlockState(), list),
+            "dirt should match a filter block");
+        helper.assertFalse(RollerSelectionUtil.isFilterBlock(Blocks.COBBLESTONE.defaultBlockState(), list),
+            "cobblestone is not in the filter");
+
+        ShuffleBlockList skipOnly = ShuffleBlockList.EMPTY.withItemStack(CreateShuffleFilter.SKIP.asStack(), 1.0f);
+        helper.assertFalse(RollerSelectionUtil.isFilterBlock(Blocks.STONE.defaultBlockState(), skipOnly),
+            "Skip entry must not match a placed block");
         helper.succeed();
     }
 

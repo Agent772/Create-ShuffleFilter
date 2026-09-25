@@ -25,6 +25,7 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.properties.SlabType;
 import net.minecraftforge.items.IItemHandler;
 import net.minecraftforge.registries.ForgeRegistries;
 
@@ -136,6 +137,106 @@ public final class RollerSelectionUtil {
         }
 
         return SelectionResult.of(configured);
+    }
+
+    /**
+     * True when the block at a position is one of the filter's (top-level) block entries.
+     * Used to leave already-placed filter blocks untouched on re-visits, mirroring the
+     * check in {@code MixinRollerMovementBehaviour#skipBreakingFilterBlocks}. Skip entries
+     * carry no block and never match.
+     */
+    public static boolean isFilterBlock(BlockState state, ShuffleBlockList blockList) {
+        for (ShuffleBlockList.BlockEntry entry : blockList.blocks()) {
+            if (ShuffleFilterUtil.isSkipEntry(entry)) continue;
+            ItemStack entryStack = entry.getItemStack();
+            if (entryStack.getItem() instanceof BlockItem blockItem && state.is(blockItem.getBlock())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Outcome of {@link #decideFill}. */
+    public enum FillOutcome {
+        /** Per-position Skip roll: leave a hole here, the column keeps descending. */
+        PASS_SKIP,
+        /** Position already holds a filter block: idempotent re-visit, place nothing. */
+        PASS_ALREADY_FILLED,
+        /** Place {@link FillDecision#toExtract()} as {@link FillDecision#toPlace()}. */
+        PLACE
+    }
+
+    /** Result of the pure per-position fill decision (no extraction / world writes). */
+    public static final class FillDecision {
+        private final FillOutcome outcome;
+        private final ItemStack toExtract;
+        private final BlockState toPlace;
+
+        private FillDecision(FillOutcome outcome, ItemStack toExtract, BlockState toPlace) {
+            this.outcome = outcome;
+            this.toExtract = toExtract;
+            this.toPlace = toPlace;
+        }
+
+        public FillOutcome outcome() { return outcome; }
+        public ItemStack toExtract() { return toExtract; }
+        public BlockState toPlace() { return toPlace; }
+    }
+
+    /**
+     * Pure decision for one {@code tryFill} position, factored out of the mixin so it can be
+     * unit-tested without a moving contraption. Mirrors the head of
+     * {@code MixinRollerMovementBehaviour#handleShuffleFilterExtraction}:
+     *
+     * <ul>
+     *   <li>Non-slab pass: re-roll the block seeded by {@code targetPos} (real Y included), so
+     *       every position is an independent, position-deterministic draw instead of inheriting
+     *       {@code lastSelected} for the whole column. A Skip roll returns {@link FillOutcome#PASS_SKIP}.</li>
+     *   <li>Slab pass ({@code BOTTOM}/{@code TOP}): keep {@code lastSelected} and {@code toPlace}
+     *       (the train-track paving pass, resolved earlier in {@code getStateToPaveWithAsSlab}).</li>
+     *   <li>If the position already holds the target block or any filter block, return
+     *       {@link FillOutcome#PASS_ALREADY_FILLED} so re-visits are idempotent.</li>
+     * </ul>
+     *
+     * Extraction, the replaceable check, fallback and slab-availability stay in the mixin.
+     */
+    public static FillDecision decideFill(
+            ShuffleBlockList blockList,
+            boolean useWeighted,
+            BlockPos targetPos,
+            BlockState toPlace,
+            ItemStack lastSelected,
+            Level level,
+            IItemHandler inv,
+            BlockState existing) {
+
+        boolean slabPass = toPlace.hasProperty(SlabBlock.TYPE)
+            && toPlace.getValue(SlabBlock.TYPE) != SlabType.DOUBLE;
+
+        ItemStack toExtract = lastSelected;
+
+        if (!slabPass) {
+            SelectionResult reroll = selectBlockForPosition(blockList, useWeighted, targetPos, level, inv);
+            if (reroll.isSkip()) {
+                return new FillDecision(FillOutcome.PASS_SKIP, ItemStack.EMPTY, toPlace);
+            }
+            if (!reroll.stack().isEmpty()) {
+                toExtract = reroll.stack();
+                if (toExtract.getItem() instanceof BlockItem blockItem) {
+                    BlockState state = blockItem.getBlock().defaultBlockState();
+                    if (state.hasProperty(SlabBlock.TYPE)) {
+                        state = state.setValue(SlabBlock.TYPE, SlabType.DOUBLE);
+                    }
+                    toPlace = state;
+                }
+            }
+        }
+
+        if (existing.is(toPlace.getBlock()) || isFilterBlock(existing, blockList)) {
+            return new FillDecision(FillOutcome.PASS_ALREADY_FILLED, toExtract, toPlace);
+        }
+
+        return new FillDecision(FillOutcome.PLACE, toExtract, toPlace);
     }
 
     public static List<ShuffleBlockList.BlockEntry> getAvailableBlocks(

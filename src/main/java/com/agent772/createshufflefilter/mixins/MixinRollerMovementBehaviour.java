@@ -291,10 +291,27 @@ public class MixinRollerMovementBehaviour {
             return;
         }
 
+        IItemHandler inv = context.contraption.getStorage().getAllItems();
+        ShuffleBlockList blockList = ShuffleBlockList.read(filterStack);
+        boolean useWeighted = filterItem instanceof WeightedShuffleFilterItem;
+
+        // Pure per-position decision (re-roll, slab-pass handling, idempotency) lives in
+        // RollerSelectionUtil so it can be unit-tested without a moving contraption.
         BlockState existing = level.getBlockState(targetPos);
-        if (existing.is(toPlace.getBlock())) {
+        RollerSelectionUtil.FillDecision decision = RollerSelectionUtil.decideFill(
+            blockList, useWeighted, targetPos, toPlace, createshufflefilter$lastSelectedBlock, level, inv, existing);
+
+        if (decision.outcome() != RollerSelectionUtil.FillOutcome.PLACE) {
+            // PASS_SKIP (per-position hole) or PASS_ALREADY_FILLED (idempotent re-visit).
+            Enum<?> pass = createshufflefilter$paveResult(1); // PASS
+            if (pass != null) cir.setReturnValue(pass);
             return;
         }
+
+        ItemStack toExtract = decision.toExtract();
+        toPlace = decision.toPlace();
+        boolean slabPass = toPlace.hasProperty(SlabBlock.TYPE)
+            && toPlace.getValue(SlabBlock.TYPE) != SlabType.DOUBLE;
 
         if (!existing.is(BlockTags.LEAVES) && !existing.canBeReplaced()
             && (!existing.getCollisionShape(level, targetPos).isEmpty()
@@ -302,34 +319,25 @@ public class MixinRollerMovementBehaviour {
             return;
         }
 
-        if (createshufflefilter$lastSelectedBlock.isEmpty()) {
+        if (toExtract.isEmpty()) {
             return;
         }
 
-        ItemStack toExtract = createshufflefilter$lastSelectedBlock;
-
-        IItemHandler inv = context.contraption.getStorage().getAllItems();
-
-        if (toPlace.hasProperty(SlabBlock.TYPE) && toPlace.getValue(SlabBlock.TYPE) != SlabType.DOUBLE) {
-            if (createshufflefilter$lastSelectedBlock.getItem() instanceof BlockItem blockItem) {
-                Block fullBlock = blockItem.getBlock();
-                ItemStack slabStack = RollerSelectionUtil.findSlabVariantInInventory(fullBlock, inv);
-                if (!slabStack.isEmpty()) {
-                    toExtract = slabStack;
-                }
+        // Slab paving pass: prefer a real slab item from inventory if one exists.
+        if (slabPass && toExtract.getItem() instanceof BlockItem blockItem) {
+            ItemStack slabStack = RollerSelectionUtil.findSlabVariantInInventory(blockItem.getBlock(), inv);
+            if (!slabStack.isEmpty()) {
+                toExtract = slabStack;
             }
         }
 
         ItemStack held = RollerSelectionUtil.extractBlockFromCascadingFilter(toExtract, targetPos, level, inv, 0);
-        CreateShuffleFilter.LOGGER.info("Extracted: {}", held);
 
         if (held.isEmpty()) {
-            CreateShuffleFilter.LOGGER.info("Extraction failed! Trying fallback...");
-
-            ShuffleBlockList blockList = ShuffleBlockList.read(filterStack);
+            // The selected material ran out this tick - fall back to any available filter block.
             ShuffleFilterUtil.SelectionResult fallback = ShuffleFilterUtil.selectItemCascading(
                 blockList,
-                filterItem instanceof WeightedShuffleFilterItem,
+                useWeighted,
                 level,
                 inv,
                 0,
