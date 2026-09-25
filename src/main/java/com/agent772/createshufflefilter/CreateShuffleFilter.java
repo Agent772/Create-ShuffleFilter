@@ -1,6 +1,7 @@
 package com.agent772.createshufflefilter;
 
 import com.agent772.createshufflefilter.item.ShuffleFilterItem;
+import com.agent772.createshufflefilter.item.SkipItem;
 import com.agent772.createshufflefilter.item.WeightedShuffleFilterItem;
 import com.agent772.createshufflefilter.menu.ModMenuTypes;
 import com.agent772.createshufflefilter.network.ModPackets;
@@ -30,6 +31,13 @@ public class CreateShuffleFilter {
     public static final ItemEntry<WeightedShuffleFilterItem> WEIGHTED_SHUFFLE_FILTER =
         REGISTRATE.item("weighted_shuffle_filter", WeightedShuffleFilterItem::new)
             .lang("Weighted Shuffle Filter")
+            .register();
+
+    // Skip marker - placed in a shuffle slot to mean "place nothing when rolled".
+    public static final ItemEntry<SkipItem> SKIP =
+        REGISTRATE.item("skip", SkipItem::new)
+            .properties(p -> p.stacksTo(1))
+            .lang("Skip")
             .register();
 
     public CreateShuffleFilter() {

@@ -64,7 +64,7 @@ public class MixinDeployerMovementBehaviour {
 
         boolean useWeighted = filterItem instanceof WeightedShuffleFilterItem;
 
-        ItemStack held = ShuffleFilterUtil.selectItemCascading(
+        ShuffleFilterUtil.SelectionResult selection = ShuffleFilterUtil.selectItemCascading(
             blockList,
             useWeighted,
             world,
@@ -73,8 +73,10 @@ public class MixinDeployerMovementBehaviour {
             new HashSet<>()
         );
 
-        if (!held.isEmpty()) {
-            player.setItemInHand(InteractionHand.MAIN_HAND, held);
+        // SKIP / NONE both leave the hand empty. We still cancel below so that
+        // Create's default grab does not run and override our decision.
+        if (!selection.isSkip() && !selection.stack().isEmpty()) {
+            player.setItemInHand(InteractionHand.MAIN_HAND, selection.stack());
         }
 
         ci.cancel();

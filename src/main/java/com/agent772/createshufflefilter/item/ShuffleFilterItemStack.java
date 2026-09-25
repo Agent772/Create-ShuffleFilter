@@ -36,6 +36,13 @@ public class ShuffleFilterItemStack extends FilterItemStack {
                 continue;
             }
 
+            // Skip marker is a config-only entry: it never matches anything in
+            // funnels/basins. Without this, a Skip item travelling through a
+            // hopper would be accepted by a filter that contains a Skip slot.
+            if (configuredItem.getItem() instanceof SkipItem) {
+                continue;
+            }
+
             if (configuredItem.getItem() instanceof FilterItem) {
                 FilterItemStack nestedFilter = FilterItemStack.of(configuredItem);
                 if (nestedFilter.test(level, stack)) {
